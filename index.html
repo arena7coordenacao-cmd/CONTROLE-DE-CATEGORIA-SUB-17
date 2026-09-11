@@ -46,10 +46,10 @@
     .filter-group label { font-size: 0.65rem; font-weight: 800; color: var(--green-header); text-transform: uppercase; }
     .filter-group select, .filter-group input { padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.8rem; background: #fff; }
 
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 16px; }
     .kpi-card { background: var(--bg-card); padding: 10px; border-radius: 6px; box-shadow: var(--shadow); text-align: center; border-top: 3px solid var(--green-primary); }
-    .kpi-val { font-size: 1.25rem; font-weight: 800; color: var(--text-main); }
-    .kpi-lbl { font-size: 0.62rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+    .kpi-val { font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
+    .kpi-lbl { font-size: 0.6rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
 
     .grid-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; margin-bottom: 16px; }
 
@@ -69,6 +69,11 @@
     .bar-track { flex: 1; background: #e2e8f0; height: 14px; border-radius: 7px; overflow: hidden; margin: 0 10px; }
     .bar-fill { background: #15803d; height: 100%; border-radius: 7px; }
     .bar-val { width: 55px; font-weight: 700; text-align: right; }
+
+    .col-chart-container { display: flex; align-items: flex-end; justify-content: space-around; height: 180px; padding-top: 20px; border-bottom: 2px solid var(--border-color); }
+    .col-item { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 30%; }
+    .col-bar { width: 100%; background: var(--green-primary); border-radius: 4px 4px 0 0; transition: height 0.3s ease; display: flex; justify-content: center; align-items: flex-start; color: white; font-weight: 800; font-size: 0.75rem; padding-top: 4px; min-height: 20px; }
+    .col-label { font-size: 0.75rem; font-weight: 700; color: var(--text-main); }
 
     .dashboard-view { display: none; }
     .dashboard-view.active { display: block; }
@@ -99,7 +104,6 @@
       <div class="status-badge">● Sincronizado</div>
     </header>
 
-    <!-- BARRA DE FILTROS GLOBAIS AVANÇADA -->
     <div class="filter-bar">
       <div class="filter-group">
         <label>Selecione o Mês</label>
@@ -127,10 +131,8 @@
       </div>
     </div>
 
-    <!-- 1. ABA JOGOS -->
     <div id="aba-jogos" class="dashboard-view active">
       <div style="display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
-        
         <div class="card" style="margin:0; width:150px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px;">
           <div class="player-avatar">
             <svg id="jogos-silhueta" width="50" height="50" viewBox="0 0 24 24" fill="#94a3b8">
@@ -144,6 +146,7 @@
         <div style="flex:1;">
           <div class="kpi-grid">
             <div class="kpi-card"><div class="kpi-lbl">Nº de Jogos</div><div class="kpi-val" id="kpi-jogos">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">% Vitórias</div><div class="kpi-val" id="kpi-pct-vitorias">0%</div></div>
             <div class="kpi-card"><div class="kpi-lbl">Minutagem Em Campo</div><div class="kpi-val" id="kpi-minutagem">0'</div></div>
             <div class="kpi-card"><div class="kpi-lbl" id="lbl-gols-atleta">Gols do Atleta</div><div class="kpi-val" id="kpi-gols-atleta">0</div></div>
             <div class="kpi-card"><div class="kpi-lbl">Gols Pró (Equipe)</div><div class="kpi-val" id="kpi-gols-pro">0</div></div>
@@ -193,18 +196,30 @@
             </table>
           </div>
         </div>
+        
         <div class="card">
           <div class="card-header-bar">Jogos por Nível do Adversário (Ranking)</div>
-          <div id="chart-ranking-adv"></div>
+          <div class="col-chart-container" id="chart-ranking-adv">
+            <div class="col-item">
+              <div class="col-bar" id="bar-rk-a" style="height:0%;">0</div>
+              <div class="col-label">Ranking A</div>
+            </div>
+            <div class="col-item">
+              <div class="col-bar" id="bar-rk-b" style="height:0%;">0</div>
+              <div class="col-label">Ranking B</div>
+            </div>
+            <div class="col-item">
+              <div class="col-bar" id="bar-rk-c" style="height:0%;">0</div>
+              <div class="col-label">Ranking C</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ABAS SECUNDÁRIAS -->
     <div id="aba-treino" class="dashboard-view"><div class="card"><div class="card-header-bar">Aba em ajuste</div></div></div>
     <div id="aba-atleta" class="dashboard-view"><div class="card"><div class="card-header-bar">Aba em ajuste</div></div></div>
     <div id="aba-conteudos" class="dashboard-view"><div class="card"><div class="card-header-bar">Aba em ajuste</div></div></div>
-
   </main>
 
   <script>
@@ -215,6 +230,18 @@
     };
 
     let DB = {};
+
+    function cleanString(str) {
+      return (str || '').toString().trim().toLowerCase();
+    }
+
+    function toTitleCase(str) {
+      if (!str) return '';
+      return str.toLowerCase().split(' ').map(word => {
+        if (['de', 'da', 'dos', 'das', 'do', 'e'].includes(word)) return word;
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      }).join(' ');
+    }
 
     function parseDateString(str) {
       if (!str) return null;
@@ -266,7 +293,7 @@
       const cSelect = document.getElementById('filter-comp');
       const mSelect = document.getElementById('filter-month');
 
-      const jogadores = [...new Set(DB.baseJogadores.map(j => (j['Nome'] || j['NOME'] || '').trim()))].filter(Boolean);
+      const jogadores = [...new Set(DB.baseJogadores.map(j => toTitleCase((j['Nome'] || j['NOME'] || '').trim())))].filter(Boolean);
       jogadores.sort().forEach(j => pSelect.innerHTML += `<option value="${j}">${j}</option>`);
 
       const advs = [...new Set(DB.posJogo.map(j => (j['Adversário'] || '').trim()))].filter(Boolean);
@@ -275,7 +302,6 @@
       const comps = [...new Set(DB.posJogo.map(j => (j['Competição'] || '').trim()))].filter(Boolean);
       comps.sort().forEach(c => cSelect.innerHTML += `<option value="${c}">${c}</option>`);
 
-      // Agrupamento por Meses
       let monthsSet = new Set();
       DB.posJogo.forEach(j => {
         const d = parseDateString(j['Data']);
@@ -321,7 +347,6 @@
       let posJogo = DB.posJogo || [];
       let posJogoInd = DB.posJogoIndividual || [];
 
-      // Filtro de Intervalo de Datas
       if (dStartVal || dEndVal) {
         const dStart = dStartVal ? new Date(dStartVal + 'T00:00:00') : null;
         const dEnd = dEndVal ? new Date(dEndVal + 'T23:59:59') : null;
@@ -350,31 +375,36 @@
       let athleteGamesSet = new Set();
 
       if (athleteFiltered) {
+        const targetClean = cleanString(fPlayer);
+        
         posJogoInd = posJogoInd.filter(r => {
-          const nomeReg = (r['Nome'] || r['NOME'] || r['Jogador'] || '').trim().toLowerCase();
+          const nomeReg = cleanString(r['Nome'] || r['NOME'] || r['Jogador']);
           const min = parseInt(r['Minutagem'] || 0);
-          return nomeReg === fPlayer.toLowerCase() && min > 0;
+          return nomeReg === targetClean && min > 0;
         });
 
         posJogoInd.forEach(r => {
-          if (r['Nº Jogo']) athleteGamesSet.add(r['Nº Jogo']);
-          if (r['Data']) athleteGamesSet.add(r['Data']);
+          if (r['Nº Jogo']) athleteGamesSet.add((r['Nº Jogo'] || '').toString().trim());
+          if (r['Data']) athleteGamesSet.add((r['Data'] || '').toString().trim());
         });
 
-        posJogo = posJogo.filter(j => athleteGamesSet.has(j['Nº Jogo']) || athleteGamesSet.has(j['Data']));
+        posJogo = posJogo.filter(j => athleteGamesSet.has((j['Nº Jogo'] || '').toString().trim()) || athleteGamesSet.has((j['Data'] || '').toString().trim()));
       }
 
-      // Cálculos dos KPIs
       let totalJogos = posJogo.length;
-      let totalMin = 0, totalGolsAtleta = 0, totalGolsPro = 0, totalGolsContra = 0, totalAss = 0;
+      let vit = 0, der = 0, totalMin = 0, totalGolsAtleta = 0, totalGolsPro = 0, totalGolsContra = 0, totalAss = 0;
       let rankingCount = { A: 0, B: 0, C: 0 };
       let capitaesCount = {};
 
       posJogo.forEach(j => {
+        const res = cleanString(j['Resultado']);
+        if (res.includes('vit')) vit++;
+        else if (res.includes('der')) der++;
+
         totalGolsPro += parseInt(j['Gols feitos'] || 0);
         totalGolsContra += parseInt(j['Gols sofridos'] || 0);
 
-        const rk = (j['Ranking'] || 'C').toUpperCase();
+        const rk = (j['Ranking'] || 'C').toUpperCase().trim();
         if (rankingCount[rk] !== undefined) rankingCount[rk]++;
 
         const cap = j['Capitão'];
@@ -391,7 +421,10 @@
         posJogo.forEach(j => totalMin += parseInt(j['Minutagem'] || 0));
       }
 
+      const pctVit = totalJogos > 0 ? Math.round((vit / totalJogos) * 100) : 0;
+
       document.getElementById('kpi-jogos').innerText = totalJogos;
+      document.getElementById('kpi-pct-vitorias').innerText = pctVit + '%';
       document.getElementById('kpi-minutagem').innerText = totalMin + "'";
       document.getElementById('kpi-gols-atleta').innerText = athleteFiltered ? totalGolsAtleta : totalGolsPro;
       document.getElementById('lbl-gols-atleta').innerText = athleteFiltered ? "Gols do Atleta" : "Gols Feitos (Equipe)";
@@ -399,36 +432,37 @@
       document.getElementById('kpi-gols-contra').innerText = totalGolsContra;
       document.getElementById('kpi-ass').innerText = totalAss;
 
-      // Capitães
       const tbodyCap = document.querySelector('#table-capitaes tbody');
       tbodyCap.innerHTML = '';
       Object.keys(capitaesCount).forEach(c => {
         tbodyCap.innerHTML += `<tr><td><b>${c}</b></td><td>${capitaesCount[c]} jogos</td></tr>`;
       });
 
-      // Ranking
-      const rkChart = document.getElementById('chart-ranking-adv');
-      rkChart.innerHTML = '';
-      Object.keys(rankingCount).forEach(rk => {
-        rkChart.innerHTML += `
-          <div class="bar-row">
-            <div class="bar-label">Ranking ${rk}</div>
-            <div class="bar-track"><div class="bar-fill" style="width:${rankingCount[rk]*12}%; background:#2563eb;"></div></div>
-            <div class="bar-val">${rankingCount[rk]} jogos</div>
-          </div>
-        `;
-      });
+      const maxRk = Math.max(rankingCount.A, rankingCount.B, rankingCount.C, 1);
+      
+      const barA = document.getElementById('bar-rk-a');
+      const barB = document.getElementById('bar-rk-b');
+      const barC = document.getElementById('bar-rk-c');
 
-      // Tabela / Gráfico Individual
+      barA.style.height = Math.round((rankingCount.A / maxRk) * 100) + '%';
+      barA.innerText = rankingCount.A;
+
+      barB.style.height = Math.round((rankingCount.B / maxRk) * 100) + '%';
+      barB.innerText = rankingCount.B;
+
+      barC.style.height = Math.round((rankingCount.C / maxRk) * 100) + '%';
+      barC.innerText = rankingCount.C;
+
       const tbody = document.querySelector('#table-jogos-atleta tbody');
       tbody.innerHTML = '';
       let stats = {};
       let maxMin = 1;
 
-      const baseInd = athleteFiltered ? DB.posJogoIndividual.filter(r => (r['Nome']||r['NOME']||'').trim().toLowerCase() === fPlayer.toLowerCase()) : DB.posJogoIndividual;
+      const baseInd = athleteFiltered ? DB.posJogoIndividual.filter(r => cleanString(r['Nome']||r['NOME']||r['Jogador']) === cleanString(fPlayer)) : DB.posJogoIndividual;
 
       baseInd.forEach(r => {
-        const nome = (r['Nome'] || r['NOME'] || r['Jogador'] || '').trim();
+        const rawNome = (r['Nome'] || r['NOME'] || r['Jogador'] || '').trim();
+        const nome = toTitleCase(rawNome);
         if (!nome || r['Titularidade'] === 'Não-relacionado') return;
         if (!stats[nome]) stats[nome] = { min: 0, gols: 0, ass: 0, ca: 0, cv: 0 };
 
@@ -465,10 +499,9 @@
         </tr>`;
       });
 
-      // Foto
-      const ath = (DB.baseJogadores || []).find(j => (j['Nome'] || j['NOME'] || '').trim().toLowerCase() === fPlayer.toLowerCase());
+      const ath = (DB.baseJogadores || []).find(j => cleanString(j['Nome'] || j['NOME']) === cleanString(fPlayer));
       if (ath && athleteFiltered) {
-        document.getElementById('jogos-nome-atleta').innerText = fPlayer;
+        document.getElementById('jogos-nome-atleta').innerText = toTitleCase(fPlayer);
         const fotoUrl = ath['Link foto'] || ath['Foto'];
         if (fotoUrl && fotoUrl.startsWith('http')) {
           document.getElementById('jogos-foto').src = fotoUrl;
