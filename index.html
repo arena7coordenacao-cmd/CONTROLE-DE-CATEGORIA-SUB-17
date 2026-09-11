@@ -291,12 +291,18 @@
     function getVal(row, keys) {
       if (!row) return '';
       for (let k of keys) {
-        if (row[k] !== undefined && row[k] !== null) return row[k];
-        // Busca ignorando maiúsculas e acentos
+        if (row[k] !== undefined && row[k] !== null) return row[k].toString().trim();
         const foundKey = Object.keys(row).find(rk => cleanString(rk) === cleanString(k));
-        if (foundKey && row[foundKey] !== undefined) return row[foundKey];
+        if (foundKey && row[foundKey] !== undefined && row[foundKey] !== null) return row[foundKey].toString().trim();
       }
       return '';
+    }
+
+    function parseNum(val) {
+      if (!val) return 0;
+      let clean = val.toString().replace(',', '.').replace(/[^0-9.]/g, '');
+      let num = parseFloat(clean);
+      return isNaN(num) ? 0 : num;
     }
 
     function toTitleCase(str) {
@@ -373,9 +379,11 @@
       if (viewId === 'aba-treino') {
         document.querySelectorAll('.filter-jogos-only').forEach(e => e.style.display = 'none');
         document.querySelectorAll('.filter-treinos-only').forEach(e => e.style.display = 'flex');
+        renderAbaTreinos();
       } else if (viewId === 'aba-jogos') {
         document.querySelectorAll('.filter-jogos-only').forEach(e => e.style.display = 'flex');
         document.querySelectorAll('.filter-treinos-only').forEach(e => e.style.display = 'none');
+        renderAbaJogos();
       }
     }
 
@@ -415,8 +423,8 @@
       (DB.posTreino || []).forEach(t => {
         const topPrep = getVal(t, ['Tipo de conteúdo preparatória', 'Tipo de conteudo preparatoria']);
         const topConc = getVal(t, ['Tipo de conteúdo conceitual', 'Tipo de conteudo conceitual']);
-        if (topPrep) topicosSet.add(topPrep.trim());
-        if (topConc) topicosSet.add(topConc.trim());
+        if (topPrep) topicosSet.add(topPrep);
+        if (topConc) topicosSet.add(topConc);
       });
       Array.from(topicosSet).sort().forEach(top => {
         if(top) tSelect.innerHTML += `<option value="${top}">${top}</option>`;
@@ -436,10 +444,10 @@
         const contConc = getVal(t, ['Conteúdo Conceitual', 'Conteudo Conceitual']);
 
         if (topicoVal === 'ALL' || topPrep === topicoVal) {
-          if (contPrep) conteudosSet.add(contPrep.trim());
+          if (contPrep) conteudosSet.add(contPrep);
         }
         if (topicoVal === 'ALL' || topConc === topicoVal) {
-          if (contConc) conteudosSet.add(contConc.trim());
+          if (contConc) conteudosSet.add(contConc);
         }
       });
 
@@ -469,6 +477,7 @@
       else if (currentView === 'aba-treino') renderAbaTreinos();
     }
 
+    // 1. LÓGICA ABA JOGOS
     function renderAbaJogos() {
       const dStartVal = document.getElementById('filter-date-start').value;
       const dEndVal = document.getElementById('filter-date-end').value;
@@ -500,8 +509,8 @@
         });
       }
 
-      if (fAdv !== 'ALL') posJogo = posJogo.filter(j => getVal(j, ['Adversário', 'Adversario']).trim() === fAdv);
-      if (fComp !== 'ALL') posJogo = posJogo.filter(j => getVal(j, ['Competição', 'Competicao']).trim() === fComp);
+      if (fAdv !== 'ALL') posJogo = posJogo.filter(j => getVal(j, ['Adversário', 'Adversario']) === fAdv);
+      if (fComp !== 'ALL') posJogo = posJogo.filter(j => getVal(j, ['Competição', 'Competicao']) === fComp);
 
       let athleteFiltered = (fPlayer !== 'ALL');
       let athleteGamesSet = new Set();
@@ -511,21 +520,21 @@
         
         posJogoInd = posJogoInd.filter(r => {
           const nomeReg = cleanString(getVal(r, ['Nome', 'NOME', 'Jogador']));
-          const min = parseInt(getVal(r, ['Minutagem']) || 0);
+          const min = parseNum(getVal(r, ['Minutagem']));
           return nomeReg === targetClean && min > 0;
         });
 
         posJogoInd.forEach(r => {
           const nJogo = getVal(r, ['Nº Jogo', 'No Jogo', 'Numero Jogo']);
           const dt = getVal(r, ['Data', 'DATA']);
-          if (nJogo) athleteGamesSet.add(nJogo.toString().trim());
-          if (dt) athleteGamesSet.add(dt.toString().trim());
+          if (nJogo) athleteGamesSet.add(nJogo);
+          if (dt) athleteGamesSet.add(dt);
         });
 
         posJogo = posJogo.filter(j => {
           const nJogo = getVal(j, ['Nº Jogo', 'No Jogo', 'Numero Jogo']);
           const dt = getVal(j, ['Data', 'DATA']);
-          return athleteGamesSet.has(nJogo.toString().trim()) || athleteGamesSet.has(dt.toString().trim());
+          return athleteGamesSet.has(nJogo) || athleteGamesSet.has(dt);
         });
       }
 
@@ -539,10 +548,10 @@
         if (res.includes('vit')) vit++;
         else if (res.includes('der')) der++;
 
-        totalGolsPro += parseInt(getVal(j, ['Gols feitos']) || 0);
-        totalGolsContra += parseInt(getVal(j, ['Gols sofridos']) || 0);
+        totalGolsPro += parseNum(getVal(j, ['Gols feitos']));
+        totalGolsContra += parseNum(getVal(j, ['Gols sofridos']));
 
-        const rk = (getVal(j, ['Ranking']) || 'C').toUpperCase().trim();
+        const rk = (getVal(j, ['Ranking']) || 'C').toUpperCase();
         if (rankingCount[rk] !== undefined) rankingCount[rk]++;
 
         const cap = getVal(j, ['Capitão', 'Capitao']);
@@ -551,12 +560,12 @@
 
       if (athleteFiltered) {
         posJogoInd.forEach(r => {
-          totalMin += parseInt(getVal(r, ['Minutagem']) || 0);
-          totalGolsAtleta += parseInt(getVal(r, ['Gols feitos']) || 0);
-          totalAss += parseInt(getVal(r, ['Assistências', 'Assistencias']) || 0);
+          totalMin += parseNum(getVal(r, ['Minutagem']));
+          totalGolsAtleta += parseNum(getVal(r, ['Gols feitos']));
+          totalAss += parseNum(getVal(r, ['Assistências', 'Assistencias']));
         });
       } else {
-        posJogo.forEach(j => totalMin += parseInt(getVal(j, ['Minutagem']) || 0));
+        posJogo.forEach(j => totalMin += parseNum(getVal(j, ['Minutagem'])));
       }
 
       const pctVit = totalJogos > 0 ? Math.round((vit / totalJogos) * 100) : 0;
@@ -599,19 +608,19 @@
       const baseInd = athleteFiltered ? DB.posJogoIndividual.filter(r => cleanString(getVal(r, ['Nome', 'NOME', 'Jogador'])) === cleanString(fPlayer)) : DB.posJogoIndividual;
 
       baseInd.forEach(r => {
-        const rawNome = getVal(r, ['Nome', 'NOME', 'Jogador']).trim();
+        const rawNome = getVal(r, ['Nome', 'NOME', 'Jogador']);
         const nome = toTitleCase(rawNome);
         if (!nome || getVal(r, ['Titularidade']) === 'Não-relacionado') return;
         if (!stats[nome]) stats[nome] = { min: 0, gols: 0, ass: 0, ca: 0, cv: 0 };
 
-        const m = parseInt(getVal(r, ['Minutagem']) || 0);
+        const m = parseNum(getVal(r, ['Minutagem']));
         stats[nome].min += m;
         if (stats[nome].min > maxMin) maxMin = stats[nome].min;
 
-        stats[nome].gols += parseInt(getVal(r, ['Gols feitos']) || 0);
-        stats[nome].ass += parseInt(getVal(r, ['Assistências', 'Assistencias']) || 0);
-        stats[nome].ca += parseInt(getVal(r, ['Cartão amarelo', 'Cartao amarelo']) || 0);
-        stats[nome].cv += parseInt(getVal(r, ['Cartão vermelho', 'Cartao vermelho']) || 0);
+        stats[nome].gols += parseNum(getVal(r, ['Gols feitos']));
+        stats[nome].ass += parseNum(getVal(r, ['Assistências', 'Assistencias']));
+        stats[nome].ca += parseNum(getVal(r, ['Cartão amarelo', 'Cartao amarelo']));
+        stats[nome].cv += parseNum(getVal(r, ['Cartão vermelho', 'Cartao vermelho']));
       });
 
       const minChart = document.getElementById('chart-minutagem-atleta');
@@ -656,6 +665,7 @@
       }
     }
 
+    // 2. LÓGICA ABA TREINOS
     function renderAbaTreinos() {
       const dStartVal = document.getElementById('filter-date-start').value;
       const dEndVal = document.getElementById('filter-date-end').value;
@@ -665,6 +675,7 @@
 
       let posTreino = DB.posTreino || [];
 
+      // Filtro de Datas
       if (dStartVal || dEndVal) {
         const dStart = dStartVal ? new Date(dStartVal + 'T00:00:00') : null;
         const dEnd = dEndVal ? new Date(dEndVal + 'T23:59:59') : null;
@@ -678,17 +689,19 @@
         });
       }
 
+      // Filtro Tópico Geral
       if (fTopico !== 'ALL') {
         posTreino = posTreino.filter(t => 
-          getVal(t, ['Tipo de conteúdo preparatória', 'Tipo de conteudo preparatoria']).trim() === fTopico ||
-          getVal(t, ['Tipo de conteúdo conceitual', 'Tipo de conteudo conceitual']).trim() === fTopico
+          getVal(t, ['Tipo de conteúdo preparatória', 'Tipo de conteudo preparatoria']) === fTopico ||
+          getVal(t, ['Tipo de conteúdo conceitual', 'Tipo de conteudo conceitual']) === fTopico
         );
       }
 
+      // Filtro Conteúdo Específico
       if (fConteudo !== 'ALL') {
         posTreino = posTreino.filter(t => 
-          getVal(t, ['Conteúdo Preparatória', 'Conteudo Preparatoria']).trim() === fConteudo ||
-          getVal(t, ['Conteúdo Conceitual', 'Conteudo Conceitual']).trim() === fConteudo
+          getVal(t, ['Conteúdo Preparatória', 'Conteudo Preparatoria']) === fConteudo ||
+          getVal(t, ['Conteúdo Conceitual', 'Conteudo Conceitual']) === fConteudo
         );
       }
 
@@ -696,8 +709,8 @@
       let somaNotas = 0, somaMin = 0;
 
       posTreino.forEach(t => {
-        somaNotas += parseFloat(getVal(t, ['Nota geral da sessão (0 a 10)', 'Nota geral da sessao']) || 0);
-        somaMin += parseInt(getVal(t, ['Minutagem efetiva']) || 0);
+        somaNotas += parseNum(getVal(t, ['Nota geral da sessão', 'Nota geral da sessao', 'Nota geral da sessão (0 a 10)']));
+        somaMin += parseNum(getVal(t, ['Minutagem efetiva', 'Minutagem Efetiva']));
       });
 
       let notaMedia = totalTreinos > 0 ? (somaNotas / totalTreinos).toFixed(1) : '0.0';
@@ -713,10 +726,10 @@
       let maxTop = 1, maxCont = 1;
 
       posTreino.forEach(t => {
-        const topPrep = getVal(t, ['Tipo de conteúdo preparatória', 'Tipo de conteudo preparatoria']).trim();
-        const topConc = getVal(t, ['Tipo de conteúdo conceitual', 'Tipo de conteudo conceitual']).trim();
-        const contPrep = getVal(t, ['Conteúdo Preparatória', 'Conteudo Preparatoria']).trim();
-        const contConc = getVal(t, ['Conteúdo Conceitual', 'Conteudo Conceitual']).trim();
+        const topPrep = getVal(t, ['Tipo de conteúdo preparatória', 'Tipo de conteudo preparatoria']);
+        const topConc = getVal(t, ['Tipo de conteúdo conceitual', 'Tipo de conteudo conceitual']);
+        const contPrep = getVal(t, ['Conteúdo Preparatória', 'Conteudo Preparatoria']);
+        const contConc = getVal(t, ['Conteúdo Conceitual', 'Conteudo Conceitual']);
 
         if (topPrep) {
           topicosCount[topPrep] = (topicosCount[topPrep] || 0) + 1;
@@ -763,14 +776,14 @@
         `;
       });
 
-      const datesInFilteredTreinos = new Set(posTreino.map(t => getVal(t, ['Data', 'DATA']).trim()));
+      const datesInFilteredTreinos = new Set(posTreino.map(t => getVal(t, ['Data', 'DATA'])));
       const tbodyAtleta = document.querySelector('#table-treino-atletas tbody');
       tbodyAtleta.innerHTML = '';
 
       let playerStats = {};
 
       (DB.posTreinoIndividual || []).forEach(row => {
-        const rawNome = getVal(row, ['Nome', 'NOME']).trim();
+        const rawNome = getVal(row, ['Nome', 'NOME']);
         const nome = toTitleCase(rawNome);
         if (!nome) return;
 
@@ -778,8 +791,8 @@
 
         Object.keys(row).forEach(dateCol => {
           if (datesInFilteredTreinos.has(dateCol.trim())) {
-            const notaVal = parseFloat(row[dateCol]);
-            if (!isNaN(notaVal) && notaVal > 0) {
+            const notaVal = parseNum(row[dateCol]);
+            if (notaVal > 0) {
               if (!playerStats[nome]) playerStats[nome] = { count: 0, sum: 0 };
               playerStats[nome].count += 1;
               playerStats[nome].sum += notaVal;
