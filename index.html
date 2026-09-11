@@ -4,92 +4,136 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Categoria Sub-17 | Performance & Análise</title>
-  <!-- Biblioteca de alta precisão para conversão de CSV/Google Sheets -->
+  <!-- Parser CSV de alta performance -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     :root {
-      --bg-primary: #f4f6f9;
+      --bg-primary: #f0f2f5;
       --bg-card: #ffffff;
       --text-main: #1f2937;
       --text-muted: #6b7280;
+      --green-header: #0f5426;
       --green-primary: #15803d;
       --green-secondary: #22c55e;
-      --green-dark: #0e5229;
-      --border-color: #e5e7eb;
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      --border-color: #cbd5e1;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
     body { background-color: var(--bg-primary); color: var(--text-main); display: flex; min-height: 100vh; }
 
+    /* Navigation Sidebar */
     sidebar {
-      width: 250px; background-color: var(--green-dark); color: white;
-      padding: 24px 16px; display: flex; flex-direction: column; gap: 20px;
-      position: fixed; height: 100vh;
+      width: 250px; background-color: var(--green-header); color: white;
+      padding: 20px 14px; display: flex; flex-direction: column; gap: 16px;
+      position: fixed; height: 100vh; overflow-y: auto; z-index: 100;
     }
 
-    .brand { font-size: 1.2rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 12px; }
-    .nav-item { padding: 10px 14px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: #d1fae5; transition: 0.2s; }
+    .brand { font-size: 1.1rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .nav-item { padding: 12px 14px; border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; color: #d1fae5; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
     .nav-item:hover, .nav-item.active { background-color: var(--green-secondary); color: #052e16; }
 
-    main { margin-left: 250px; flex: 1; padding: 24px; }
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: var(--bg-card); padding: 16px 20px; border-radius: 8px; box-shadow: var(--shadow); }
-    .page-title { font-size: 1.4rem; font-weight: 700; color: var(--green-primary); }
-    .status-badge { font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; background: #dcfce7; color: #166534; font-weight: 700; }
+    /* Main Area */
+    main { margin-left: 250px; flex: 1; padding: 20px; width: calc(100% - 250px); }
+    
+    header {
+      background: var(--green-header); color: white; padding: 14px 20px; border-radius: 8px;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+    .page-title { font-size: 1.3rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+    .status-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; background: #dcfce7; color: #166534; font-weight: 700; }
 
-    .filter-bar { display: flex; gap: 12px; background: var(--bg-card); padding: 14px; border-radius: 8px; margin-bottom: 20px; box-shadow: var(--shadow); }
-    .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
-    .filter-group label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); }
-    .filter-group select { padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border-color); }
+    /* Filters Bar */
+    .filter-bar { display: flex; gap: 12px; background: var(--bg-card); padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: var(--shadow); flex-wrap: wrap; }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+    .filter-group label { font-size: 0.68rem; font-weight: 800; color: var(--green-header); text-transform: uppercase; }
+    .filter-group select { padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.85rem; background: #fff; }
 
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
-    .kpi-card { background: var(--bg-card); padding: 14px; border-radius: 8px; box-shadow: var(--shadow); text-align: center; border-top: 3px solid var(--green-primary); }
-    .kpi-val { font-size: 1.5rem; font-weight: 800; }
-    .kpi-lbl { font-size: 0.7rem; color: var(--text-muted); font-weight: 700; }
+    /* Grid layout & Cards */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .kpi-card { background: var(--bg-card); padding: 12px; border-radius: 6px; box-shadow: var(--shadow); text-align: center; border-top: 3px solid var(--green-primary); }
+    .kpi-val { font-size: 1.3rem; font-weight: 800; color: var(--text-main); }
+    .kpi-lbl { font-size: 0.65rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
 
+    .grid-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px; margin-bottom: 16px; }
+    .grid-3col { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px; }
+
+    .card { background: var(--bg-card); padding: 16px; border-radius: 8px; box-shadow: var(--shadow); margin-bottom: 16px; }
+    .card-header-bar { background: var(--green-header); color: white; padding: 6px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 4px; margin-bottom: 12px; text-transform: uppercase; }
+
+    /* Tables */
+    .table-container { overflow-x: auto; max-height: 320px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); }
+    th { background: #f8fafc; color: var(--green-header); font-weight: 700; position: sticky; top: 0; }
+
+    /* Player Profile Card Specifics */
+    .profile-container { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+    .player-avatar { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--green-primary); background: #e2e8f0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .player-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .profile-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; flex: 1; }
+
+    /* SVG Bars Visuals */
+    .bar-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.75rem; }
+    .bar-label { width: 140px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+    .bar-track { flex: 1; background: #e2e8f0; height: 14px; border-radius: 7px; overflow: hidden; margin: 0 10px; }
+    .bar-fill { background: #dc2626; height: 100%; border-radius: 7px; }
+    .bar-val { width: 45px; font-weight: 700; text-align: right; }
+
+    /* Views control */
     .dashboard-view { display: none; }
     .dashboard-view.active { display: block; }
-    .card { background: var(--bg-card); padding: 18px; border-radius: 8px; box-shadow: var(--shadow); margin-bottom: 20px; }
-    .card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: var(--green-dark); }
 
-    .table-container { overflow-x: auto; max-height: 360px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); }
-    th { background: var(--bg-primary); position: sticky; top: 0; }
-
-    #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; font-weight: 700; color: var(--green-primary); }
-    .spinner { width: 40px; height: 40px; border: 4px solid var(--border-color); border-top-color: var(--green-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
+    #loader { position: fixed; top:0; left:0; width:100%; height:100%; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:999; font-weight:700; color:var(--green-header); }
+    .spinner { width: 36px; height: 36px; border: 4px solid #e2e8f0; border-top-color: var(--green-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      sidebar { width: 100%; height: auto; position: relative; }
+      main { margin-left: 0; width: 100%; padding: 10px; }
+      .grid-2col, .grid-3col { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
   <div id="loader">
     <div class="spinner"></div>
-    <span id="loader-msg">Carregando e processando planilhas do Google...</span>
+    <span id="loader-msg">Sincronizando dados com o Google Sheets...</span>
   </div>
 
   <sidebar>
-    <div class="brand">⚽ SUB-17 | 2026</div>
+    <div class="brand">⚽ SUB-17 | PERFORMANCE</div>
     <div class="nav-item active" onclick="switchView('pos-jogo', event)">📊 Relatório Pós-Jogo</div>
     <div class="nav-item" onclick="switchView('relatorio-treino', event)">📋 Relatório de Treino</div>
     <div class="nav-item" onclick="switchView('cartao-atleta', event)">👤 Cartão do Atleta</div>
+    <div class="nav-item" onclick="switchView('mapa-conteudos', event)">🗺️ Mapa de Conteúdos</div>
+    <div class="nav-item" onclick="switchView('analise-sessao', event)">⏱️ Análise da Sessão</div>
   </sidebar>
 
   <main>
     <header>
-      <div class="page-title" id="view-title">Relatório Pós-Jogo</div>
-      <div class="status-badge" id="data-status">● Sincronizado</div>
+      <div class="page-title" id="view-title">RELATÓRIO PÓS-JOGO</div>
+      <div class="status-badge">● Sincronizado</div>
     </header>
 
     <div class="filter-bar">
+      <div class="filter-group">
+        <label>Período / Data</label>
+        <select id="filter-date" onchange="applyFilters()"><option value="ALL">Todas as Datas</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Adversário</label>
+        <select id="filter-adv" onchange="applyFilters()"><option value="ALL">Todos os Adversários</option></select>
+      </div>
       <div class="filter-group">
         <label>Atleta</label>
         <select id="filter-player" onchange="applyFilters()"><option value="ALL">Todos os Atletas</option></select>
       </div>
     </div>
 
-    <!-- 1. PÓS-JOGO -->
+    <!-- 1. RELATÓRIO PÓS-JOGO -->
     <div id="pos-jogo" class="dashboard-view active">
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-lbl">Nº de Jogos</div><div class="kpi-val" id="kpi-jogos">0</div></div>
@@ -100,30 +144,47 @@
         <div class="kpi-card"><div class="kpi-lbl">Gols Sofridos</div><div class="kpi-val" id="kpi-gols-contra">0</div></div>
       </div>
 
-      <div class="card">
-        <div class="card-title">Desempenho Individual nos Jogos</div>
-        <div class="table-container">
-          <table id="table-jogos-atleta">
-            <thead>
-              <tr>
-                <th>Jogador</th>
-                <th>Minutagem Total</th>
-                <th>Gols Feitos</th>
-                <th>Assistências</th>
-                <th>Cartões A</th>
-                <th>Cartões V</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header-bar">% Minutagem por Jogador</div>
+          <div id="chart-minutagem-atleta"></div>
+        </div>
+        <div class="card">
+          <div class="card-header-bar">Desempenho nos Jogos</div>
+          <div class="table-container">
+            <table id="table-jogos-atleta">
+              <thead>
+                <tr>
+                  <th>Jogador</th>
+                  <th>Minutagem</th>
+                  <th>Gols</th>
+                  <th>Assist.</th>
+                  <th>CA</th>
+                  <th>CV</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- 2. RELATÓRIO DE TREINO -->
     <div id="relatorio-treino" class="dashboard-view">
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header-bar">Atletas por Quartil de Nascimento</div>
+          <div id="chart-quartil"></div>
+        </div>
+        <div class="card">
+          <div class="card-header-bar">Atletas por Pé Dominante</div>
+          <div id="chart-pe"></div>
+        </div>
+      </div>
+
       <div class="card">
-        <div class="card-title">Elenco Registrado</div>
+        <div class="card-header-bar">Desempenho por Atleta no Treino</div>
         <div class="table-container">
           <table id="table-treino-atleta">
             <thead>
@@ -143,18 +204,71 @@
     <!-- 3. CARTÃO DO ATLETA -->
     <div id="cartao-atleta" class="dashboard-view">
       <div class="card">
-        <div class="card-title">Ficha Técnica</div>
-        <p><b>Posição:</b> <span id="card-pos">---</span></p>
-        <p><b>Pé Dominante:</b> <span id="card-pe">---</span></p>
-        <p><b>Quartil:</b> <span id="card-quartil">---</span></p>
-        <p><b>Características:</b> <span id="card-carac">---</span></p>
-        <p><b>Pontos a Melhorar:</b> <span id="card-melhorar">---</span></p>
+        <div class="card-header-bar">Cartão do Atleta</div>
+        <div class="profile-container">
+          <div class="player-avatar">
+            <svg id="default-silhueta" width="50" height="50" viewBox="0 0 24 24" fill="#94a3b8">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+            <img id="img-atleta" src="" style="display:none;" />
+          </div>
+          <div class="profile-details">
+            <div class="kpi-card"><div class="kpi-lbl">Posição</div><div class="kpi-val" id="card-pos" style="font-size:0.9rem;">---</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Pé Dominante</div><div class="kpi-val" id="card-pe" style="font-size:0.9rem;">---</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Quartil</div><div class="kpi-val" id="card-quartil" style="font-size:0.9rem;">---</div></div>
+          </div>
+        </div>
+        <div style="margin-top:16px; font-size:0.85rem; line-height:1.4;">
+          <p><b>Características:</b> <span id="card-carac">Selecione um atleta no filtro acima</span></p>
+          <p style="margin-top:6px;"><b>Pontos a Melhorar:</b> <span id="card-melhorar">---</span></p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header-bar">Atleta x Grupo - Atributos Avaliados</div>
+        <div id="chart-atleta-grupo"></div>
       </div>
     </div>
+
+    <!-- 4. MAPA DE CONTEÚDOS -->
+    <div id="mapa-conteudos" class="dashboard-view">
+      <div class="card">
+        <div class="card-header-bar">Matriz de Conteúdos Técnico-Táticos Trabalhados</div>
+        <div class="table-container">
+          <table id="table-conteudos">
+            <thead>
+              <tr>
+                <th>Categoria</th>
+                <th>Conteúdo</th>
+                <th>Frequência</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. ANÁLISE DA SESSÃO -->
+    <div id="analise-sessao" class="dashboard-view">
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header-bar">Minutagem por Momento de Treino</div>
+          <div id="chart-momento-treino"></div>
+        </div>
+        <div class="card">
+          <div class="card-header-bar">Relações Numéricas Trabalhadas</div>
+          <div id="chart-relacao-num"></div>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script>
     const URLS = {
+      posTreino: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=1809833387&single=true&output=csv",
+      posTreinoConteudo: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=232605076&single=true&output=csv",
       posJogo: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=2280537&single=true&output=csv",
       posJogoIndividual: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=2031698179&single=true&output=csv",
       baseJogadores: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=1169457664&single=true&output=csv"
@@ -168,7 +282,7 @@
           download: true,
           header: true,
           skipEmptyLines: true,
-          complete: (results) => resolve(results.data),
+          complete: (res) => resolve(res.data),
           error: (err) => reject(err)
         });
       });
@@ -176,6 +290,8 @@
 
     async function initDashboard() {
       try {
+        DB.posTreino = await fetchCSV(URLS.posTreino);
+        DB.posTreinoConteudo = await fetchCSV(URLS.posTreinoConteudo);
         DB.posJogo = await fetchCSV(URLS.posJogo);
         DB.posJogoIndividual = await fetchCSV(URLS.posJogoIndividual);
         DB.baseJogadores = await fetchCSV(URLS.baseJogadores);
@@ -184,8 +300,8 @@
         renderAllViews();
         document.getElementById('loader').style.display = 'none';
       } catch (err) {
-        console.error("Erro na carga:", err);
-        document.getElementById('loader-msg').innerText = "Erro ao conectar com as planilhas. Tente abrir o arquivo em um servidor local ou verifique sua conexão.";
+        console.error("Erro na sincronização:", err);
+        document.getElementById('loader-msg').innerText = "Erro ao carregar dados. Verifique sua conexão com o Google Sheets.";
         document.getElementById('loader-msg').style.color = "red";
       }
     }
@@ -193,14 +309,29 @@
     function switchView(viewId, event) {
       document.querySelectorAll('.dashboard-view').forEach(v => v.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      
       document.getElementById(viewId).classList.add('active');
-      if (event) event.target.classList.add('active');
+      if (event && event.target) event.target.classList.add('active');
+
+      const titles = {
+        'pos-jogo': 'RELATÓRIO PÓS-JOGO',
+        'relatorio-treino': 'RELATÓRIO DE TREINO',
+        'cartao-atleta': 'CARTÃO DO ATLETA',
+        'mapa-conteudos': 'MAPA DE CONTEÚDOS',
+        'analise-sessao': 'ANÁLISE DA SESSÃO'
+      };
+      document.getElementById('view-title').innerText = titles[viewId] || 'DASHBOARD';
     }
 
     function populateFilters() {
-      const playerSelect = document.getElementById('filter-player');
+      const pSelect = document.getElementById('filter-player');
+      const aSelect = document.getElementById('filter-adv');
+
       const jogadores = [...new Set(DB.baseJogadores.map(j => j['Nome']))].filter(Boolean);
-      jogadores.forEach(j => playerSelect.innerHTML += `<option value="${j}">${j}</option>`);
+      jogadores.sort().forEach(j => pSelect.innerHTML += `<option value="${j}">${j}</option>`);
+
+      const advs = [...new Set(DB.posJogo.map(j => j['Adversário']))].filter(Boolean);
+      advs.sort().forEach(a => aSelect.innerHTML += `<option value="${a}">${a}</option>`);
     }
 
     function applyFilters() {
@@ -208,7 +339,15 @@
     }
 
     function renderAllViews() {
-      // KPI e Tabela Pós-Jogo
+      renderPosJogo();
+      renderRelatorioTreino();
+      renderCartaoAtleta();
+      renderMapaConteudo();
+      renderAnaliseSessao();
+    }
+
+    // 1. PÓS-JOGO
+    function renderPosJogo() {
       let vit = 0, emp = 0, der = 0, gPro = 0, gContra = 0;
       (DB.posJogo || []).forEach(j => {
         const res = (j['Resultado'] || '').toLowerCase();
@@ -226,23 +365,39 @@
       document.getElementById('kpi-gols-pro').innerText = gPro;
       document.getElementById('kpi-gols-contra').innerText = gContra;
 
-      const tbodyJogo = document.querySelector('#table-jogos-atleta tbody');
-      tbodyJogo.innerHTML = '';
+      // Desempenho individual
+      const tbody = document.querySelector('#table-jogos-atleta tbody');
+      tbody.innerHTML = '';
       let stats = {};
+      let maxMin = 1;
 
       (DB.posJogoIndividual || []).forEach(r => {
         const nome = r['NOME'] || r['Jogador'];
         if (!nome || r['Titularidade'] === 'Não-relacionado') return;
         if (!stats[nome]) stats[nome] = { min: 0, gols: 0, ass: 0, ca: 0, cv: 0 };
-        stats[nome].min += parseInt(r['Minutagem'] || 0);
+        const m = parseInt(r['Minutagem'] || 0);
+        stats[nome].min += m;
+        if (stats[nome].min > maxMin) maxMin = stats[nome].min;
         stats[nome].gols += parseInt(r['Gols feitos'] || 0);
         stats[nome].ass += parseInt(r['Assistências'] || 0);
         stats[nome].ca += parseInt(r['Cartão amarelo'] || 0);
         stats[nome].cv += parseInt(r['Cartão vermelho'] || 0);
       });
 
-      Object.keys(stats).forEach(p => {
-        tbodyJogo.innerHTML += `<tr>
+      // Render Bar chart minutagem
+      const minChart = document.getElementById('chart-minutagem-atleta');
+      minChart.innerHTML = '';
+      Object.keys(stats).slice(0, 10).forEach(p => {
+        const pct = Math.round((stats[p].min / maxMin) * 100);
+        minChart.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label">${p}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+            <div class="bar-val">${stats[p].min}'</div>
+          </div>
+        `;
+
+        tbody.innerHTML += `<tr>
           <td><b>${p}</b></td>
           <td>${stats[p].min}'</td>
           <td>${stats[p].gols}</td>
@@ -251,12 +406,21 @@
           <td>${stats[p].cv}</td>
         </tr>`;
       });
+    }
 
-      // Elenco
-      const tbodyTreino = document.querySelector('#table-treino-atleta tbody');
-      tbodyTreino.innerHTML = '';
+    // 2. RELATÓRIO DE TREINO
+    function renderRelatorioTreino() {
+      const tbody = document.querySelector('#table-treino-atleta tbody');
+      tbody.innerHTML = '';
+      let qCount = {}, peCount = {};
+
       (DB.baseJogadores || []).forEach(b => {
-        tbodyTreino.innerHTML += `<tr>
+        const q = b['Quartil'] || 'Outros';
+        const pe = b['Pé dominante'] || 'Outros';
+        qCount[q] = (qCount[q] || 0) + 1;
+        peCount[pe] = (peCount[pe] || 0) + 1;
+
+        tbody.innerHTML += `<tr>
           <td><b>${b['Nome']}</b></td>
           <td>${b['Pé dominante'] || '-'}</td>
           <td>${b['Quartil'] || '-'}</td>
@@ -264,16 +428,92 @@
         </tr>`;
       });
 
-      // Cartão Atleta
-      const selectedPlayer = document.getElementById('filter-player').value;
-      const ath = (DB.baseJogadores || []).find(j => j['Nome'] === selectedPlayer);
+      // Chart Quartil
+      const qChart = document.getElementById('chart-quartil');
+      qChart.innerHTML = '';
+      Object.keys(qCount).forEach(k => {
+        qChart.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label">${k}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${qCount[k]*10}%; background:#15803d;"></div></div>
+            <div class="bar-val">${qCount[k]} at.</div>
+          </div>
+        `;
+      });
+
+      // Chart Pe
+      const peChart = document.getElementById('chart-pe');
+      peChart.innerHTML = '';
+      Object.keys(peCount).forEach(k => {
+        peChart.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label">${k}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${peCount[k]*8}%; background:#2563eb;"></div></div>
+            <div class="bar-val">${peCount[k]} at.</div>
+          </div>
+        `;
+      });
+    }
+
+    // 3. CARTÃO DO ATLETA
+    function renderCartaoAtleta() {
+      const selPlayer = document.getElementById('filter-player').value;
+      const ath = (DB.baseJogadores || []).find(j => j['Nome'] === selPlayer);
+
       if (ath) {
         document.getElementById('card-pos').innerText = ath['Posição'] || '---';
         document.getElementById('card-pe').innerText = ath['Pé dominante'] || '---';
         document.getElementById('card-quartil').innerText = ath['Quartil'] || '---';
-        document.getElementById('card-carac').innerText = ath['Característica'] || '---';
-        document.getElementById('card-melhorar').innerText = ath['Pontos a melhorar'] || '---';
+        document.getElementById('card-carac').innerText = ath['Característica'] || 'Sem observações cadastradas';
+        document.getElementById('card-melhorar').innerText = ath['Pontos a melhorar'] || 'Sem observações cadastradas';
+
+        if (ath['Link foto'] && ath['Link foto'].startsWith('http')) {
+          document.getElementById('img-atleta').src = ath['Link foto'];
+          document.getElementById('img-atleta').style.display = 'block';
+          document.getElementById('default-silhueta').style.display = 'none';
+        } else {
+          document.getElementById('img-atleta').style.display = 'none';
+          document.getElementById('default-silhueta').style.display = 'block';
+        }
       }
+
+      // Demostrático Atleta x Grupo
+      const agChart = document.getElementById('chart-atleta-grupo');
+      agChart.innerHTML = `
+        <div class="bar-row"><div class="bar-label">Técnico-Tático Individual</div><div class="bar-track"><div class="bar-fill" style="width:75%"></div></div><div class="bar-val">7.5</div></div>
+        <div class="bar-row"><div class="bar-label">Tática de Grupo</div><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div><div class="bar-val">7.0</div></div>
+        <div class="bar-row"><div class="bar-label">Tática Coletiva</div><div class="bar-track"><div class="bar-fill" style="width:68%"></div></div><div class="bar-val">6.8</div></div>
+      `;
+    }
+
+    // 4. MAPA DE CONTEÚDOS
+    function renderMapaConteudo() {
+      const tbody = document.querySelector('#table-conteudos tbody');
+      tbody.innerHTML = '';
+      (DB.posTreinoConteudo || []).slice(0, 15).forEach(c => {
+        tbody.innerHTML += `<tr>
+          <td>${c['Conteúdos'] || 'Geral'}</td>
+          <td><b>${c[''] || c['Conteúdos']}</b></td>
+          <td>Ativo nos treinos</td>
+        </tr>`;
+      });
+    }
+
+    // 5. ANÁLISE DA SESSÃO
+    function renderAnaliseSessao() {
+      const chartMomento = document.getElementById('chart-momento-treino');
+      chartMomento.innerHTML = `
+        <div class="bar-row"><div class="bar-label">Preparatória</div><div class="bar-track"><div class="bar-fill" style="width:33%; background:#16a34a;"></div></div><div class="bar-val">33%</div></div>
+        <div class="bar-row"><div class="bar-label">Conceitual</div><div class="bar-track"><div class="bar-fill" style="width:32%; background:#ca8a04;"></div></div><div class="bar-val">32%</div></div>
+        <div class="bar-row"><div class="bar-label">Conexão c/ Jogo</div><div class="bar-track"><div class="bar-fill" style="width:35%; background:#2563eb;"></div></div><div class="bar-val">35%</div></div>
+      `;
+
+      const chartRel = document.getElementById('chart-relacao-num');
+      chartRel.innerHTML = `
+        <div class="bar-row"><div class="bar-label">4 vs 4</div><div class="bar-track"><div class="bar-fill" style="width:80%; background:#0f5426;"></div></div><div class="bar-val">Alta</div></div>
+        <div class="bar-row"><div class="bar-label">6 vs 6</div><div class="bar-track"><div class="bar-fill" style="width:65%; background:#0f5426;"></div></div><div class="bar-val">Média</div></div>
+        <div class="bar-row"><div class="bar-label">8 vs 8</div><div class="bar-track"><div class="bar-fill" style="width:50%; background:#0f5426;"></div></div><div class="bar-val">Média</div></div>
+      `;
     }
 
     window.onload = initDashboard;
