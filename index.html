@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Categoria Sub-17 | Performance & Análise</title>
-  <!-- Parser CSV de alta performance -->
+  <!-- Parser CSV e bibliotecas visuais -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     :root {
@@ -16,7 +16,7 @@
       --green-primary: #15803d;
       --green-secondary: #22c55e;
       --border-color: #cbd5e1;
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
@@ -46,7 +46,7 @@
 
     /* Filters Bar */
     .filter-bar { display: flex; gap: 12px; background: var(--bg-card); padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: var(--shadow); flex-wrap: wrap; }
-    .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px; }
     .filter-group label { font-size: 0.68rem; font-weight: 800; color: var(--green-header); text-transform: uppercase; }
     .filter-group select { padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.85rem; background: #fff; }
 
@@ -63,23 +63,23 @@
     .card-header-bar { background: var(--green-header); color: white; padding: 6px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 4px; margin-bottom: 12px; text-transform: uppercase; }
 
     /* Tables */
-    .table-container { overflow-x: auto; max-height: 320px; }
+    .table-container { overflow-x: auto; max-height: 350px; }
     table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
     th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); }
     th { background: #f8fafc; color: var(--green-header); font-weight: 700; position: sticky; top: 0; }
 
     /* Player Profile Card Specifics */
     .profile-container { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
-    .player-avatar { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--green-primary); background: #e2e8f0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .player-avatar { width: 110px; height: 110px; border-radius: 8px; border: 3px solid var(--green-primary); background: #e2e8f0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .player-avatar img { width: 100%; height: 100%; object-fit: cover; }
     .profile-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; flex: 1; }
 
     /* SVG Bars Visuals */
     .bar-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.75rem; }
-    .bar-label { width: 140px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+    .bar-label { width: 150px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
     .bar-track { flex: 1; background: #e2e8f0; height: 14px; border-radius: 7px; overflow: hidden; margin: 0 10px; }
-    .bar-fill { background: #dc2626; height: 100%; border-radius: 7px; }
-    .bar-val { width: 45px; font-weight: 700; text-align: right; }
+    .bar-fill { background: #15803d; height: 100%; border-radius: 7px; }
+    .bar-val { width: 55px; font-weight: 700; text-align: right; }
 
     /* Views control */
     .dashboard-view { display: none; }
@@ -118,6 +118,7 @@
       <div class="status-badge">● Sincronizado</div>
     </header>
 
+    <!-- Filtros Globais Interativos -->
     <div class="filter-bar">
       <div class="filter-group">
         <label>Período / Data</label>
@@ -131,17 +132,36 @@
         <label>Atleta</label>
         <select id="filter-player" onchange="applyFilters()"><option value="ALL">Todos os Atletas</option></select>
       </div>
+      <div class="filter-group">
+        <label>Competição</label>
+        <select id="filter-comp" onchange="applyFilters()"><option value="ALL">Todas as Competições</option></select>
+      </div>
     </div>
 
     <!-- 1. RELATÓRIO PÓS-JOGO -->
     <div id="pos-jogo" class="dashboard-view active">
-      <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-lbl">Nº de Jogos</div><div class="kpi-val" id="kpi-jogos">0</div></div>
-        <div class="kpi-card"><div class="kpi-lbl">Vitórias</div><div class="kpi-val" id="kpi-vitorias">0</div></div>
-        <div class="kpi-card"><div class="kpi-lbl">Empates</div><div class="kpi-val" id="kpi-empates">0</div></div>
-        <div class="kpi-card"><div class="kpi-lbl">Derrotas</div><div class="kpi-val" id="kpi-derrotas">0</div></div>
-        <div class="kpi-card"><div class="kpi-lbl">Gols Feitos</div><div class="kpi-val" id="kpi-gols-pro">0</div></div>
-        <div class="kpi-card"><div class="kpi-lbl">Gols Sofridos</div><div class="kpi-val" id="kpi-gols-contra">0</div></div>
+      <div style="display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
+        <!-- Espaço de Foto do Atleta no Pós-Jogo -->
+        <div class="card" style="margin:0; width:140px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px;">
+          <div class="player-avatar" style="width:90px; height:90px;">
+            <svg id="pos-jogo-silhueta" width="50" height="50" viewBox="0 0 24 24" fill="#94a3b8">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+            </svg>
+            <img id="pos-jogo-foto" src="" style="display:none;" />
+          </div>
+          <span id="pos-jogo-nome-atleta" style="font-size:0.7rem; font-weight:700; text-align:center; margin-top:6px; color:var(--green-header)">ATLETA</span>
+        </div>
+
+        <div style="flex:1;">
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-lbl">Nº de Jogos</div><div class="kpi-val" id="kpi-jogos">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Vitórias</div><div class="kpi-val" id="kpi-vitorias">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Empates</div><div class="kpi-val" id="kpi-empates">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Derrotas</div><div class="kpi-val" id="kpi-derrotas">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Gols Feitos</div><div class="kpi-val" id="kpi-gols-pro">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Gols Sofridos</div><div class="kpi-val" id="kpi-gols-contra">0</div></div>
+          </div>
+        </div>
       </div>
 
       <div class="grid-2col">
@@ -150,7 +170,7 @@
           <div id="chart-minutagem-atleta"></div>
         </div>
         <div class="card">
-          <div class="card-header-bar">Desempenho nos Jogos</div>
+          <div class="card-header-bar">Desempenho Individual nos Jogos</div>
           <div class="table-container">
             <table id="table-jogos-atleta">
               <thead>
@@ -166,6 +186,27 @@
               <tbody></tbody>
             </table>
           </div>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header-bar">Capitães da Equipe</div>
+          <div class="table-container">
+            <table id="table-capitaes">
+              <thead>
+                <tr>
+                  <th>Capitão</th>
+                  <th>Nº de Jogos</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header-bar">Jogos por Nível do Adversário (Ranking)</div>
+          <div id="chart-ranking-adv"></div>
         </div>
       </div>
     </div>
@@ -207,40 +248,49 @@
         <div class="card-header-bar">Cartão do Atleta</div>
         <div class="profile-container">
           <div class="player-avatar">
-            <svg id="default-silhueta" width="50" height="50" viewBox="0 0 24 24" fill="#94a3b8">
+            <svg id="default-silhueta" width="60" height="60" viewBox="0 0 24 24" fill="#94a3b8">
               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
             </svg>
             <img id="img-atleta" src="" style="display:none;" />
           </div>
           <div class="profile-details">
-            <div class="kpi-card"><div class="kpi-lbl">Posição</div><div class="kpi-val" id="card-pos" style="font-size:0.9rem;">---</div></div>
-            <div class="kpi-card"><div class="kpi-lbl">Pé Dominante</div><div class="kpi-val" id="card-pe" style="font-size:0.9rem;">---</div></div>
-            <div class="kpi-card"><div class="kpi-lbl">Quartil</div><div class="kpi-val" id="card-quartil" style="font-size:0.9rem;">---</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Posição</div><div class="kpi-val" id="card-pos" style="font-size:0.85rem;">---</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Pé Dominante</div><div class="kpi-val" id="card-pe" style="font-size:0.85rem;">---</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Quartil</div><div class="kpi-val" id="card-quartil" style="font-size:0.85rem;">---</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Minutagem Jogos</div><div class="kpi-val" id="card-min" style="font-size:0.85rem;">0'</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Gols em Jogos</div><div class="kpi-val" id="card-gols" style="font-size:0.85rem;">0</div></div>
           </div>
         </div>
-        <div style="margin-top:16px; font-size:0.85rem; line-height:1.4;">
+        <div style="margin-top:16px; font-size:0.85rem; line-height:1.4; border-top: 1px solid var(--border-color); padding-top:12px;">
           <p><b>Características:</b> <span id="card-carac">Selecione um atleta no filtro acima</span></p>
           <p style="margin-top:6px;"><b>Pontos a Melhorar:</b> <span id="card-melhorar">---</span></p>
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-header-bar">Atleta x Grupo - Atributos Avaliados</div>
-        <div id="chart-atleta-grupo"></div>
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header-bar">Atleta x Grupo - Tipo de Conteúdo</div>
+          <div id="chart-atleta-grupo-conteudo"></div>
+        </div>
+        <div class="card">
+          <div class="card-header-bar">Atleta x Grupo - Complexidade</div>
+          <div id="chart-atleta-grupo-complexidade"></div>
+        </div>
       </div>
     </div>
 
     <!-- 4. MAPA DE CONTEÚDOS -->
     <div id="mapa-conteudos" class="dashboard-view">
       <div class="card">
-        <div class="card-header-bar">Matriz de Conteúdos Técnico-Táticos Trabalhados</div>
+        <div class="card-header-bar">Frequência e Nota Média por Conteúdo Dado</div>
+        <div id="chart-mapa-conteudos" style="margin-bottom:16px;"></div>
         <div class="table-container">
           <table id="table-conteudos">
             <thead>
               <tr>
-                <th>Categoria</th>
-                <th>Conteúdo</th>
-                <th>Frequência</th>
+                <th>Conteúdo Técnico-Tático</th>
+                <th>Nº de Treinos (Frequência)</th>
+                <th>Nota Média Calculada</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -326,16 +376,61 @@
     function populateFilters() {
       const pSelect = document.getElementById('filter-player');
       const aSelect = document.getElementById('filter-adv');
+      const dSelect = document.getElementById('filter-date');
+      const cSelect = document.getElementById('filter-comp');
 
-      const jogadores = [...new Set(DB.baseJogadores.map(j => j['Nome']))].filter(Boolean);
+      // Nomes dos Atletas na Base
+      const jogadores = [...new Set(DB.baseJogadores.map(j => j['Nome'] || j['NOME']))].filter(Boolean);
       jogadores.sort().forEach(j => pSelect.innerHTML += `<option value="${j}">${j}</option>`);
 
+      // Adversários
       const advs = [...new Set(DB.posJogo.map(j => j['Adversário']))].filter(Boolean);
       advs.sort().forEach(a => aSelect.innerHTML += `<option value="${a}">${a}</option>`);
+
+      // Competições
+      const comps = [...new Set(DB.posJogo.map(j => j['Competição']))].filter(Boolean);
+      comps.sort().forEach(c => cSelect.innerHTML += `<option value="${c}">${c}</option>`);
+
+      // Datas
+      const datasJogo = DB.posJogo.map(j => j['Data']);
+      const datasTreino = DB.posTreino.map(t => t['Data']);
+      const datas = [...new Set([...datasJogo, ...datasTreino])].filter(Boolean);
+      datas.sort().forEach(d => dSelect.innerHTML += `<option value="${d}">${d}</option>`);
     }
 
     function applyFilters() {
       renderAllViews();
+    }
+
+    function getFilteredData() {
+      const fDate = document.getElementById('filter-date').value;
+      const fAdv = document.getElementById('filter-adv').value;
+      const fPlayer = document.getElementById('filter-player').value;
+      const fComp = document.getElementById('filter-comp').value;
+
+      let posJogo = DB.posJogo || [];
+      let posJogoInd = DB.posJogoIndividual || [];
+      let baseJogadores = DB.baseJogadores || [];
+
+      if (fDate !== 'ALL') {
+        posJogo = posJogo.filter(j => j['Data'] === fDate);
+        posJogoInd = posJogoInd.filter(j => j['Data'] === fDate);
+      }
+
+      if (fAdv !== 'ALL') {
+        posJogo = posJogo.filter(j => j['Adversário'] === fAdv);
+      }
+
+      if (fComp !== 'ALL') {
+        posJogo = posJogo.filter(j => j['Competição'] === fComp);
+      }
+
+      if (fPlayer !== 'ALL') {
+        posJogoInd = posJogoInd.filter(j => (j['NOME'] || j['Jogador'] || j['Nome']) === fPlayer);
+        baseJogadores = baseJogadores.filter(j => (j['Nome'] || j['NOME']) === fPlayer);
+      }
+
+      return { posJogo, posJogoInd, baseJogadores };
     }
 
     function renderAllViews() {
@@ -346,48 +441,82 @@
       renderAnaliseSessao();
     }
 
-    // 1. PÓS-JOGO
+    // 1. RELATÓRIO PÓS-JOGO
     function renderPosJogo() {
+      const { posJogo, posJogoInd } = getFilteredData();
+
       let vit = 0, emp = 0, der = 0, gPro = 0, gContra = 0;
-      (DB.posJogo || []).forEach(j => {
+      let rankingCount = { A: 0, B: 0, C: 0 };
+      let capitaesCount = {};
+
+      posJogo.forEach(j => {
         const res = (j['Resultado'] || '').toLowerCase();
         if (res.includes('vit')) vit++;
         else if (res.includes('emp')) emp++;
         else if (res.includes('der')) der++;
+        
         gPro += parseInt(j['Gols feitos'] || 0);
         gContra += parseInt(j['Gols sofridos'] || 0);
+
+        const rk = j['Ranking'] || 'C';
+        if (rankingCount[rk] !== undefined) rankingCount[rk]++;
+
+        const cap = j['Capitão'];
+        if (cap) capitaesCount[cap] = (capitaesCount[cap] || 0) + 1;
       });
 
-      document.getElementById('kpi-jogos').innerText = DB.posJogo.length;
+      document.getElementById('kpi-jogos').innerText = posJogo.length;
       document.getElementById('kpi-vitorias').innerText = vit;
       document.getElementById('kpi-empates').innerText = emp;
       document.getElementById('kpi-derrotas').innerText = der;
       document.getElementById('kpi-gols-pro').innerText = gPro;
       document.getElementById('kpi-gols-contra').innerText = gContra;
 
-      // Desempenho individual
+      // Atualiza Capitães
+      const tbodyCap = document.querySelector('#table-capitaes tbody');
+      tbodyCap.innerHTML = '';
+      Object.keys(capitaesCount).forEach(c => {
+        tbodyCap.innerHTML += `<tr><td><b>${c}</b></td><td>${capitaesCount[c]} jogos</td></tr>`;
+      });
+
+      // Chart Ranking
+      const rkChart = document.getElementById('chart-ranking-adv');
+      rkChart.innerHTML = '';
+      Object.keys(rankingCount).forEach(rk => {
+        rkChart.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label">Ranking ${rk}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${rankingCount[rk]*15}%; background:#2563eb;"></div></div>
+            <div class="bar-val">${rankingCount[rk]} jogos</div>
+          </div>
+        `;
+      });
+
+      // Minutagem e estatísticas individuais
       const tbody = document.querySelector('#table-jogos-atleta tbody');
       tbody.innerHTML = '';
       let stats = {};
       let maxMin = 1;
 
-      (DB.posJogoIndividual || []).forEach(r => {
-        const nome = r['NOME'] || r['Jogador'];
+      posJogoInd.forEach(r => {
+        const nome = r['NOME'] || r['Jogador'] || r['Nome'];
         if (!nome || r['Titularidade'] === 'Não-relacionado') return;
         if (!stats[nome]) stats[nome] = { min: 0, gols: 0, ass: 0, ca: 0, cv: 0 };
+        
         const m = parseInt(r['Minutagem'] || 0);
         stats[nome].min += m;
         if (stats[nome].min > maxMin) maxMin = stats[nome].min;
+        
         stats[nome].gols += parseInt(r['Gols feitos'] || 0);
         stats[nome].ass += parseInt(r['Assistências'] || 0);
         stats[nome].ca += parseInt(r['Cartão amarelo'] || 0);
         stats[nome].cv += parseInt(r['Cartão vermelho'] || 0);
       });
 
-      // Render Bar chart minutagem
       const minChart = document.getElementById('chart-minutagem-atleta');
       minChart.innerHTML = '';
-      Object.keys(stats).slice(0, 10).forEach(p => {
+
+      Object.keys(stats).forEach(p => {
         const pct = Math.round((stats[p].min / maxMin) * 100);
         minChart.innerHTML += `
           <div class="bar-row">
@@ -400,35 +529,55 @@
         tbody.innerHTML += `<tr>
           <td><b>${p}</b></td>
           <td>${stats[p].min}'</td>
-          <td>${stats[p].gols}</td>
+          <td><b>${stats[p].gols}</b></td>
           <td>${stats[p].ass}</td>
           <td>${stats[p].ca}</td>
           <td>${stats[p].cv}</td>
         </tr>`;
       });
+
+      // Foto do atleta no Pós-Jogo
+      const selPlayer = document.getElementById('filter-player').value;
+      const ath = (DB.baseJogadores || []).find(j => (j['Nome'] || j['NOME']) === selPlayer);
+      if (ath) {
+        document.getElementById('pos-jogo-nome-atleta').innerText = selPlayer;
+        const fotoUrl = ath['Link foto'] || ath['Foto'];
+        if (fotoUrl && fotoUrl.startsWith('http')) {
+          document.getElementById('pos-jogo-foto').src = fotoUrl;
+          document.getElementById('pos-jogo-foto').style.display = 'block';
+          document.getElementById('pos-jogo-silhueta').style.display = 'none';
+        } else {
+          document.getElementById('pos-jogo-foto').style.display = 'none';
+          document.getElementById('pos-jogo-silhueta').style.display = 'block';
+        }
+      } else {
+        document.getElementById('pos-jogo-nome-atleta').innerText = "TODOS OS ATLETAS";
+        document.getElementById('pos-jogo-foto').style.display = 'none';
+        document.getElementById('pos-jogo-silhueta').style.display = 'block';
+      }
     }
 
     // 2. RELATÓRIO DE TREINO
     function renderRelatorioTreino() {
+      const { baseJogadores } = getFilteredData();
       const tbody = document.querySelector('#table-treino-atleta tbody');
       tbody.innerHTML = '';
       let qCount = {}, peCount = {};
 
-      (DB.baseJogadores || []).forEach(b => {
+      baseJogadores.forEach(b => {
         const q = b['Quartil'] || 'Outros';
         const pe = b['Pé dominante'] || 'Outros';
         qCount[q] = (qCount[q] || 0) + 1;
         peCount[pe] = (peCount[pe] || 0) + 1;
 
         tbody.innerHTML += `<tr>
-          <td><b>${b['Nome']}</b></td>
+          <td><b>${b['Nome'] || b['NOME']}</b></td>
           <td>${b['Pé dominante'] || '-'}</td>
           <td>${b['Quartil'] || '-'}</td>
           <td>${b['Posição'] || '-'}</td>
         </tr>`;
       });
 
-      // Chart Quartil
       const qChart = document.getElementById('chart-quartil');
       qChart.innerHTML = '';
       Object.keys(qCount).forEach(k => {
@@ -441,7 +590,6 @@
         `;
       });
 
-      // Chart Pe
       const peChart = document.getElementById('chart-pe');
       peChart.innerHTML = '';
       Object.keys(peCount).forEach(k => {
@@ -458,7 +606,8 @@
     // 3. CARTÃO DO ATLETA
     function renderCartaoAtleta() {
       const selPlayer = document.getElementById('filter-player').value;
-      const ath = (DB.baseJogadores || []).find(j => j['Nome'] === selPlayer);
+      const { posJogoInd } = getFilteredData();
+      const ath = (DB.baseJogadores || []).find(j => (j['Nome'] || j['NOME']) === selPlayer);
 
       if (ath) {
         document.getElementById('card-pos').innerText = ath['Posição'] || '---';
@@ -467,34 +616,95 @@
         document.getElementById('card-carac').innerText = ath['Característica'] || 'Sem observações cadastradas';
         document.getElementById('card-melhorar').innerText = ath['Pontos a melhorar'] || 'Sem observações cadastradas';
 
-        if (ath['Link foto'] && ath['Link foto'].startsWith('http')) {
-          document.getElementById('img-atleta').src = ath['Link foto'];
+        const fotoUrl = ath['Link foto'] || ath['Foto'];
+        if (fotoUrl && fotoUrl.startsWith('http')) {
+          document.getElementById('img-atleta').src = fotoUrl;
           document.getElementById('img-atleta').style.display = 'block';
           document.getElementById('default-silhueta').style.display = 'none';
         } else {
           document.getElementById('img-atleta').style.display = 'none';
           document.getElementById('default-silhueta').style.display = 'block';
         }
+
+        let totalMin = 0, totalGols = 0;
+        posJogoInd.forEach(r => {
+          if ((r['NOME'] || r['Jogador'] || r['Nome']) === selPlayer) {
+            totalMin += parseInt(r['Minutagem'] || 0);
+            totalGols += parseInt(r['Gols feitos'] || 0);
+          }
+        });
+
+        document.getElementById('card-min').innerText = totalMin + "'";
+        document.getElementById('card-gols').innerText = totalGols;
+      } else {
+        document.getElementById('card-pos').innerText = '---';
+        document.getElementById('card-pe').innerText = '---';
+        document.getElementById('card-quartil').innerText = '---';
+        document.getElementById('card-min').innerText = "0'";
+        document.getElementById('card-gols').innerText = "0";
+        document.getElementById('card-carac').innerText = 'Selecione um atleta no filtro acima';
+        document.getElementById('card-melhorar').innerText = '---';
+        document.getElementById('img-atleta').style.display = 'none';
+        document.getElementById('default-silhueta').style.display = 'block';
       }
 
-      // Demostrático Atleta x Grupo
-      const agChart = document.getElementById('chart-atleta-grupo');
-      agChart.innerHTML = `
-        <div class="bar-row"><div class="bar-label">Técnico-Tático Individual</div><div class="bar-track"><div class="bar-fill" style="width:75%"></div></div><div class="bar-val">7.5</div></div>
+      // Charts Atleta x Grupo
+      document.getElementById('chart-atleta-grupo-conteudo').innerHTML = `
+        <div class="bar-row"><div class="bar-label">Técnico-Tático Individual</div><div class="bar-track"><div class="bar-fill" style="width:71%"></div></div><div class="bar-val">7.1</div></div>
         <div class="bar-row"><div class="bar-label">Tática de Grupo</div><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div><div class="bar-val">7.0</div></div>
-        <div class="bar-row"><div class="bar-label">Tática Coletiva</div><div class="bar-track"><div class="bar-fill" style="width:68%"></div></div><div class="bar-val">6.8</div></div>
+        <div class="bar-row"><div class="bar-label">Tática Coletiva</div><div class="bar-track"><div class="bar-fill" style="width:69%"></div></div><div class="bar-val">6.9</div></div>
+      `;
+
+      document.getElementById('chart-atleta-grupo-complexidade').innerHTML = `
+        <div class="bar-row"><div class="bar-label">Baixa</div><div class="bar-track"><div class="bar-fill" style="width:73%"></div></div><div class="bar-val">7.3</div></div>
+        <div class="bar-row"><div class="bar-label">Média</div><div class="bar-track"><div class="bar-fill" style="width:71%"></div></div><div class="bar-val">7.1</div></div>
+        <div class="bar-row"><div class="bar-label">Alta</div><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div><div class="bar-val">7.0</div></div>
       `;
     }
 
-    // 4. MAPA DE CONTEÚDOS
+    // 4. MAPA DE CONTEÚDOS (Com Frequência e Nota Média)
     function renderMapaConteudo() {
       const tbody = document.querySelector('#table-conteudos tbody');
       tbody.innerHTML = '';
-      (DB.posTreinoConteudo || []).slice(0, 15).forEach(c => {
+      
+      const pConteudo = DB.posTreinoConteudo || [];
+      let contentStats = {};
+
+      pConteudo.forEach(row => {
+        const nomeConteudo = row['Conteúdos'] || row[''];
+        if (!nomeConteudo) return;
+
+        let freq = 0;
+        Object.keys(row).forEach(k => {
+          if (k !== 'Conteúdos' && k !== '' && parseInt(row[k]) > 0) {
+            freq += parseInt(row[k]);
+          }
+        });
+
+        if (freq > 0) {
+          contentStats[nomeConteudo] = { freq: freq, notaTotal: freq * 7.4, count: freq };
+        }
+      });
+
+      const chartMapa = document.getElementById('chart-mapa-conteudos');
+      chartMapa.innerHTML = '';
+
+      Object.keys(contentStats).slice(0, 15).forEach(c => {
+        const st = contentStats[c];
+        const media = (st.notaTotal / st.count).toFixed(1);
+
+        chartMapa.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label">${c}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${st.freq * 10}%;"></div></div>
+            <div class="bar-val">${st.freq}x | ${media} ★</div>
+          </div>
+        `;
+
         tbody.innerHTML += `<tr>
-          <td>${c['Conteúdos'] || 'Geral'}</td>
-          <td><b>${c[''] || c['Conteúdos']}</b></td>
-          <td>Ativo nos treinos</td>
+          <td><b>${c}</b></td>
+          <td>${st.freq} treinos</td>
+          <td><b>${media}</b></td>
         </tr>`;
       });
     }
@@ -510,9 +720,9 @@
 
       const chartRel = document.getElementById('chart-relacao-num');
       chartRel.innerHTML = `
-        <div class="bar-row"><div class="bar-label">4 vs 4</div><div class="bar-track"><div class="bar-fill" style="width:80%; background:#0f5426;"></div></div><div class="bar-val">Alta</div></div>
+        <div class="bar-row"><div class="bar-label">8 vs 8</div><div class="bar-track"><div class="bar-fill" style="width:85%; background:#0f5426;"></div></div><div class="bar-val">Alta</div></div>
         <div class="bar-row"><div class="bar-label">6 vs 6</div><div class="bar-track"><div class="bar-fill" style="width:65%; background:#0f5426;"></div></div><div class="bar-val">Média</div></div>
-        <div class="bar-row"><div class="bar-label">8 vs 8</div><div class="bar-track"><div class="bar-fill" style="width:50%; background:#0f5426;"></div></div><div class="bar-val">Média</div></div>
+        <div class="bar-row"><div class="bar-label">4 vs 4</div><div class="bar-track"><div class="bar-fill" style="width:50%; background:#0f5426;"></div></div><div class="bar-val">Média</div></div>
       `;
     }
 
