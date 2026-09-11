@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Categoria Sub-17 | Performance & Análise</title>
-  <!-- Parser CSV de alta performance -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <style>
     :root {
@@ -22,18 +21,16 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
     body { background-color: var(--bg-primary); color: var(--text-main); display: flex; min-height: 100vh; }
 
-    /* Navigation Sidebar */
     sidebar {
       width: 240px; background-color: var(--green-header); color: white;
       padding: 20px 14px; display: flex; flex-direction: column; gap: 16px;
       position: fixed; height: 100vh; overflow-y: auto; z-index: 100;
     }
 
-    .brand { font-size: 1.1rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .nav-item { padding: 12px 14px; border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; color: #d1fae5; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+    .brand { font-size: 1.1rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 12px; text-transform: uppercase; }
+    .nav-item { padding: 12px 14px; border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; color: #d1fae5; transition: 0.2s; }
     .nav-item:hover, .nav-item.active { background-color: var(--green-secondary); color: #052e16; }
 
-    /* Main Area */
     main { margin-left: 240px; flex: 1; padding: 20px; width: calc(100% - 240px); }
     
     header {
@@ -41,43 +38,38 @@
       display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
       box-shadow: var(--shadow);
     }
-    .page-title { font-size: 1.3rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+    .page-title { font-size: 1.3rem; font-weight: 800; text-transform: uppercase; }
     .status-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; background: #dcfce7; color: #166534; font-weight: 700; }
 
-    /* Filters Bar */
-    .filter-bar { display: flex; gap: 12px; background: var(--bg-card); padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: var(--shadow); flex-wrap: wrap; }
-    .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
-    .filter-group label { font-size: 0.68rem; font-weight: 800; color: var(--green-header); text-transform: uppercase; }
-    .filter-group select { padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.85rem; background: #fff; }
+    .filter-bar { display: flex; gap: 10px; background: var(--bg-card); padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: var(--shadow); flex-wrap: wrap; align-items: flex-end; }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
+    .filter-group label { font-size: 0.65rem; font-weight: 800; color: var(--green-header); text-transform: uppercase; }
+    .filter-group select, .filter-group input { padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.8rem; background: #fff; }
 
-    /* Grid layout & Cards */
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 16px; }
-    .kpi-card { background: var(--bg-card); padding: 12px; border-radius: 6px; box-shadow: var(--shadow); text-align: center; border-top: 3px solid var(--green-primary); }
-    .kpi-val { font-size: 1.3rem; font-weight: 800; color: var(--text-main); }
-    .kpi-lbl { font-size: 0.65rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+    .kpi-card { background: var(--bg-card); padding: 10px; border-radius: 6px; box-shadow: var(--shadow); text-align: center; border-top: 3px solid var(--green-primary); }
+    .kpi-val { font-size: 1.25rem; font-weight: 800; color: var(--text-main); }
+    .kpi-lbl { font-size: 0.62rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
 
-    .grid-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px; margin-bottom: 16px; }
+    .grid-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; margin-bottom: 16px; }
 
     .card { background: var(--bg-card); padding: 16px; border-radius: 8px; box-shadow: var(--shadow); margin-bottom: 16px; }
-    .card-header-bar { background: var(--green-header); color: white; padding: 6px 12px; font-size: 0.82rem; font-weight: 700; border-radius: 4px; margin-bottom: 12px; text-transform: uppercase; }
+    .card-header-bar { background: var(--green-header); color: white; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 4px; margin-bottom: 12px; text-transform: uppercase; }
 
-    /* Tables */
     .table-container { overflow-x: auto; max-height: 350px; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
     th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); }
     th { background: #f8fafc; color: var(--green-header); font-weight: 700; position: sticky; top: 0; }
 
     .player-avatar { width: 100px; height: 100px; border-radius: 8px; border: 3px solid var(--green-primary); background: #e2e8f0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .player-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-    /* SVG Bars Visuals */
     .bar-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.75rem; }
     .bar-label { width: 150px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
     .bar-track { flex: 1; background: #e2e8f0; height: 14px; border-radius: 7px; overflow: hidden; margin: 0 10px; }
     .bar-fill { background: #15803d; height: 100%; border-radius: 7px; }
     .bar-val { width: 55px; font-weight: 700; text-align: right; }
 
-    /* Views control */
     .dashboard-view { display: none; }
     .dashboard-view.active { display: block; }
 
@@ -107,11 +99,19 @@
       <div class="status-badge">● Sincronizado</div>
     </header>
 
-    <!-- BARRA DE FILTROS GLOBAIS -->
+    <!-- BARRA DE FILTROS GLOBAIS AVANÇADA -->
     <div class="filter-bar">
       <div class="filter-group">
-        <label>Período / Data</label>
-        <select id="filter-date" onchange="applyFilters()"><option value="ALL">Todas as Datas</option></select>
+        <label>Selecione o Mês</label>
+        <select id="filter-month" onchange="onMonthChange()"><option value="ALL">Todos os Meses</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Data Inicial</label>
+        <input type="date" id="filter-date-start" onchange="applyFilters()">
+      </div>
+      <div class="filter-group">
+        <label>Data Final</label>
+        <input type="date" id="filter-date-end" onchange="applyFilters()">
       </div>
       <div class="filter-group">
         <label>Adversário</label>
@@ -131,7 +131,6 @@
     <div id="aba-jogos" class="dashboard-view active">
       <div style="display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
         
-        <!-- Foto / Identificação do Atleta Filtrado -->
         <div class="card" style="margin:0; width:150px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px;">
           <div class="player-avatar">
             <svg id="jogos-silhueta" width="50" height="50" viewBox="0 0 24 24" fill="#94a3b8">
@@ -142,15 +141,14 @@
           <span id="jogos-nome-atleta" style="font-size:0.75rem; font-weight:800; text-align:center; margin-top:8px; color:var(--green-header)">TODOS OS ATLETAS</span>
         </div>
 
-        <!-- KPIs Dinâmicos de Jogos -->
         <div style="flex:1;">
           <div class="kpi-grid">
             <div class="kpi-card"><div class="kpi-lbl">Nº de Jogos</div><div class="kpi-val" id="kpi-jogos">0</div></div>
-            <div class="kpi-card"><div class="kpi-lbl">Minutagem Total</div><div class="kpi-val" id="kpi-minutagem">0'</div></div>
-            <div class="kpi-card"><div class="kpi-lbl" id="lbl-gols-pro">Gols Feitos</div><div class="kpi-val" id="kpi-gols-pro">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Minutagem Em Campo</div><div class="kpi-val" id="kpi-minutagem">0'</div></div>
+            <div class="kpi-card"><div class="kpi-lbl" id="lbl-gols-atleta">Gols do Atleta</div><div class="kpi-val" id="kpi-gols-atleta">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Gols Pró (Equipe)</div><div class="kpi-val" id="kpi-gols-pro">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Gols Sofridos em Campo</div><div class="kpi-val" id="kpi-gols-contra">0</div></div>
             <div class="kpi-card"><div class="kpi-lbl">Assistências</div><div class="kpi-val" id="kpi-ass">0</div></div>
-            <div class="kpi-card"><div class="kpi-lbl">Vitórias</div><div class="kpi-val" id="kpi-vitorias">0</div></div>
-            <div class="kpi-card"><div class="kpi-lbl">Derrotas</div><div class="kpi-val" id="kpi-derrotas">0</div></div>
           </div>
         </div>
       </div>
@@ -202,10 +200,10 @@
       </div>
     </div>
 
-    <!-- MÓDULOS FUTUROS QUE VAMOS AJUSTAR NAS PRÓXIMAS ETAPAS -->
-    <div id="aba-treino" class="dashboard-view"><div class="card"><div class="card-header-bar">Em breve ajustaremos esta aba</div></div></div>
-    <div id="aba-atleta" class="dashboard-view"><div class="card"><div class="card-header-bar">Em breve ajustaremos esta aba</div></div></div>
-    <div id="aba-conteudos" class="dashboard-view"><div class="card"><div class="card-header-bar">Em breve ajustaremos esta aba</div></div></div>
+    <!-- ABAS SECUNDÁRIAS -->
+    <div id="aba-treino" class="dashboard-view"><div class="card"><div class="card-header-bar">Aba em ajuste</div></div></div>
+    <div id="aba-atleta" class="dashboard-view"><div class="card"><div class="card-header-bar">Aba em ajuste</div></div></div>
+    <div id="aba-conteudos" class="dashboard-view"><div class="card"><div class="card-header-bar">Aba em ajuste</div></div></div>
 
   </main>
 
@@ -217,6 +215,15 @@
     };
 
     let DB = {};
+
+    function parseDateString(str) {
+      if (!str) return null;
+      const parts = str.trim().split('/');
+      if (parts.length === 3) {
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+      }
+      return null;
+    }
 
     function fetchCSV(url) {
       return new Promise((resolve, reject) => {
@@ -240,8 +247,8 @@
         renderAbaJogos();
         document.getElementById('loader').style.display = 'none';
       } catch (err) {
-        console.error("Erro ao carregar dados:", err);
-        document.getElementById('loader-msg').innerText = "Erro ao conectar com as planilhas do Google.";
+        console.error("Erro na inicialização:", err);
+        document.getElementById('loader-msg').innerText = "Erro ao carregar dados do Google Sheets.";
         document.getElementById('loader-msg').style.color = "red";
       }
     }
@@ -256,33 +263,57 @@
     function populateFilters() {
       const pSelect = document.getElementById('filter-player');
       const aSelect = document.getElementById('filter-adv');
-      const dSelect = document.getElementById('filter-date');
       const cSelect = document.getElementById('filter-comp');
+      const mSelect = document.getElementById('filter-month');
 
-      // Lista Atletas
       const jogadores = [...new Set(DB.baseJogadores.map(j => (j['Nome'] || j['NOME'] || '').trim()))].filter(Boolean);
       jogadores.sort().forEach(j => pSelect.innerHTML += `<option value="${j}">${j}</option>`);
 
-      // Lista Adversários
       const advs = [...new Set(DB.posJogo.map(j => (j['Adversário'] || '').trim()))].filter(Boolean);
       advs.sort().forEach(a => aSelect.innerHTML += `<option value="${a}">${a}</option>`);
 
-      // Lista Competições
       const comps = [...new Set(DB.posJogo.map(j => (j['Competição'] || '').trim()))].filter(Boolean);
       comps.sort().forEach(c => cSelect.innerHTML += `<option value="${c}">${c}</option>`);
 
-      // Lista Datas
-      const datas = [...new Set(DB.posJogo.map(j => (j['Data'] || '').trim()))].filter(Boolean);
-      datas.sort().forEach(d => dSelect.innerHTML += `<option value="${d}">${d}</option>`);
+      // Agrupamento por Meses
+      let monthsSet = new Set();
+      DB.posJogo.forEach(j => {
+        const d = parseDateString(j['Data']);
+        if (d) {
+          const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          monthsSet.add(mKey);
+        }
+      });
+
+      const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+      Array.from(monthsSet).sort().forEach(m => {
+        const [year, month] = m.split('-');
+        const name = `${monthNames[parseInt(month)-1]} ${year}`;
+        mSelect.innerHTML += `<option value="${m}">${name}</option>`;
+      });
+    }
+
+    function onMonthChange() {
+      const mVal = document.getElementById('filter-month').value;
+      if (mVal !== 'ALL') {
+        const [year, month] = mVal.split('-');
+        const lastDay = new Date(year, month, 0).getDate();
+        document.getElementById('filter-date-start').value = `${year}-${month}-01`;
+        document.getElementById('filter-date-end').value = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+      } else {
+        document.getElementById('filter-date-start').value = '';
+        document.getElementById('filter-date-end').value = '';
+      }
+      applyFilters();
     }
 
     function applyFilters() {
       renderAbaJogos();
     }
 
-    // LÓGICA EXCLUSIVA DA ABA JOGOS
     function renderAbaJogos() {
-      const fDate = document.getElementById('filter-date').value;
+      const dStartVal = document.getElementById('filter-date-start').value;
+      const dEndVal = document.getElementById('filter-date-end').value;
       const fAdv = document.getElementById('filter-adv').value;
       const fPlayer = document.getElementById('filter-player').value;
       const fComp = document.getElementById('filter-comp').value;
@@ -290,43 +321,58 @@
       let posJogo = DB.posJogo || [];
       let posJogoInd = DB.posJogoIndividual || [];
 
-      // Aplicar Filtros Gerais
-      if (fDate !== 'ALL') {
-        posJogo = posJogo.filter(j => (j['Data'] || '').trim() === fDate);
-        posJogoInd = posJogoInd.filter(j => (j['Data'] || '').trim() === fDate);
-      }
-      if (fAdv !== 'ALL') {
-        posJogo = posJogo.filter(j => (j['Adversário'] || '').trim() === fAdv);
-      }
-      if (fComp !== 'ALL') {
-        posJogo = posJogo.filter(j => (j['Competição'] || '').trim() === fComp);
-      }
+      // Filtro de Intervalo de Datas
+      if (dStartVal || dEndVal) {
+        const dStart = dStartVal ? new Date(dStartVal + 'T00:00:00') : null;
+        const dEnd = dEndVal ? new Date(dEndVal + 'T23:59:59') : null;
 
-      // Se houver filtro de Atleta
-      let athleteFiltered = false;
-      if (fPlayer !== 'ALL') {
-        athleteFiltered = true;
-        // Filtra só os registros do atleta onde ele realmente jogou
-        posJogoInd = posJogoInd.filter(r => {
-          const nomeReg = (r['Nome'] || r['NOME'] || r['Jogador'] || '').trim().toLowerCase();
-          return nomeReg === fPlayer.toLowerCase() && parseInt(r['Minutagem'] || 0) > 0;
+        posJogo = posJogo.filter(j => {
+          const d = parseDateString(j['Data']);
+          if (!d) return false;
+          if (dStart && d < dStart) return false;
+          if (dEnd && d > dEnd) return false;
+          return true;
         });
 
-        // Filtra os jogos gerais apenas para os jogos onde o atleta participou
-        const jogosQueAtletaJogou = new Set(posJogoInd.map(r => r['Nº Jogo'] || r['Data']));
-        posJogo = posJogo.filter(j => jogosQueAtletaJogou.has(j['Nº Jogo']) || jogosQueAtletaJogou.has(j['Data']));
+        posJogoInd = posJogoInd.filter(j => {
+          const d = parseDateString(j['Data']);
+          if (!d) return false;
+          if (dStart && d < dStart) return false;
+          if (dEnd && d > dEnd) return false;
+          return true;
+        });
       }
 
-      // Cálculo dos KPIs
+      if (fAdv !== 'ALL') posJogo = posJogo.filter(j => (j['Adversário'] || '').trim() === fAdv);
+      if (fComp !== 'ALL') posJogo = posJogo.filter(j => (j['Competição'] || '').trim() === fComp);
+
+      let athleteFiltered = (fPlayer !== 'ALL');
+      let athleteGamesSet = new Set();
+
+      if (athleteFiltered) {
+        posJogoInd = posJogoInd.filter(r => {
+          const nomeReg = (r['Nome'] || r['NOME'] || r['Jogador'] || '').trim().toLowerCase();
+          const min = parseInt(r['Minutagem'] || 0);
+          return nomeReg === fPlayer.toLowerCase() && min > 0;
+        });
+
+        posJogoInd.forEach(r => {
+          if (r['Nº Jogo']) athleteGamesSet.add(r['Nº Jogo']);
+          if (r['Data']) athleteGamesSet.add(r['Data']);
+        });
+
+        posJogo = posJogo.filter(j => athleteGamesSet.has(j['Nº Jogo']) || athleteGamesSet.has(j['Data']));
+      }
+
+      // Cálculos dos KPIs
       let totalJogos = posJogo.length;
-      let vit = 0, der = 0, totalMin = 0, totalGols = 0, totalAss = 0;
+      let totalMin = 0, totalGolsAtleta = 0, totalGolsPro = 0, totalGolsContra = 0, totalAss = 0;
       let rankingCount = { A: 0, B: 0, C: 0 };
       let capitaesCount = {};
 
       posJogo.forEach(j => {
-        const res = (j['Resultado'] || '').toLowerCase();
-        if (res.includes('vit')) vit++;
-        else if (res.includes('der')) der++;
+        totalGolsPro += parseInt(j['Gols feitos'] || 0);
+        totalGolsContra += parseInt(j['Gols sofridos'] || 0);
 
         const rk = (j['Ranking'] || 'C').toUpperCase();
         if (rankingCount[rk] !== undefined) rankingCount[rk]++;
@@ -335,54 +381,50 @@
         if (cap) capitaesCount[cap] = (capitaesCount[cap] || 0) + 1;
       });
 
-      // Se filtro de atleta está ativo, calcula minutagem e gols DELE
       if (athleteFiltered) {
         posJogoInd.forEach(r => {
           totalMin += parseInt(r['Minutagem'] || 0);
-          totalGols += parseInt(r['Gols feitos'] || 0);
+          totalGolsAtleta += parseInt(r['Gols feitos'] || 0);
           totalAss += parseInt(r['Assistências'] || 0);
         });
       } else {
-        posJogo.forEach(j => {
-          totalMin += parseInt(j['Minutagem'] || 0);
-          totalGols += parseInt(j['Gols feitos'] || 0);
-        });
+        posJogo.forEach(j => totalMin += parseInt(j['Minutagem'] || 0));
       }
 
       document.getElementById('kpi-jogos').innerText = totalJogos;
       document.getElementById('kpi-minutagem').innerText = totalMin + "'";
-      document.getElementById('kpi-gols-pro').innerText = totalGols;
+      document.getElementById('kpi-gols-atleta').innerText = athleteFiltered ? totalGolsAtleta : totalGolsPro;
+      document.getElementById('lbl-gols-atleta').innerText = athleteFiltered ? "Gols do Atleta" : "Gols Feitos (Equipe)";
+      document.getElementById('kpi-gols-pro').innerText = totalGolsPro;
+      document.getElementById('kpi-gols-contra').innerText = totalGolsContra;
       document.getElementById('kpi-ass').innerText = totalAss;
-      document.getElementById('kpi-vitorias').innerText = vit;
-      document.getElementById('kpi-derrotas').innerText = der;
 
-      // Render Tabela de Capitães
+      // Capitães
       const tbodyCap = document.querySelector('#table-capitaes tbody');
       tbodyCap.innerHTML = '';
       Object.keys(capitaesCount).forEach(c => {
         tbodyCap.innerHTML += `<tr><td><b>${c}</b></td><td>${capitaesCount[c]} jogos</td></tr>`;
       });
 
-      // Render Ranking do Adversário
+      // Ranking
       const rkChart = document.getElementById('chart-ranking-adv');
       rkChart.innerHTML = '';
       Object.keys(rankingCount).forEach(rk => {
         rkChart.innerHTML += `
           <div class="bar-row">
             <div class="bar-label">Ranking ${rk}</div>
-            <div class="bar-track"><div class="bar-fill" style="width:${rankingCount[rk]*15}%; background:#2563eb;"></div></div>
+            <div class="bar-track"><div class="bar-fill" style="width:${rankingCount[rk]*12}%; background:#2563eb;"></div></div>
             <div class="bar-val">${rankingCount[rk]} jogos</div>
           </div>
         `;
       });
 
-      // Render Tabela e Gráfico Individual por Jogador
+      // Tabela / Gráfico Individual
       const tbody = document.querySelector('#table-jogos-atleta tbody');
       tbody.innerHTML = '';
       let stats = {};
       let maxMin = 1;
 
-      // Se não houver filtro de atleta, processa a lista de todos
       const baseInd = athleteFiltered ? DB.posJogoIndividual.filter(r => (r['Nome']||r['NOME']||'').trim().toLowerCase() === fPlayer.toLowerCase()) : DB.posJogoIndividual;
 
       baseInd.forEach(r => {
@@ -423,7 +465,7 @@
         </tr>`;
       });
 
-      // Foto do Atleta
+      // Foto
       const ath = (DB.baseJogadores || []).find(j => (j['Nome'] || j['NOME'] || '').trim().toLowerCase() === fPlayer.toLowerCase());
       if (ath && athleteFiltered) {
         document.getElementById('jogos-nome-atleta').innerText = fPlayer;
