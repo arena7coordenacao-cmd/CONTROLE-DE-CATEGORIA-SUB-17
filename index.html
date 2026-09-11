@@ -65,10 +65,10 @@
     .player-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
     .bar-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.75rem; }
-    .bar-label { width: 150px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+    .bar-label { width: 180px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
     .bar-track { flex: 1; background: #e2e8f0; height: 14px; border-radius: 7px; overflow: hidden; margin: 0 10px; }
     .bar-fill { background: #15803d; height: 100%; border-radius: 7px; }
-    .bar-val { width: 55px; font-weight: 700; text-align: right; }
+    .bar-val { width: 65px; font-weight: 700; text-align: right; }
 
     .col-chart-container { display: flex; align-items: flex-end; justify-content: space-around; height: 180px; padding-top: 20px; border-bottom: 2px solid var(--border-color); }
     .col-item { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 30%; }
@@ -92,10 +92,10 @@
 
   <sidebar>
     <div class="brand">⚽ SUB-17 | PERFORMANCE</div>
-    <div class="nav-item active" onclick="switchView('aba-jogos', event)">📊 Jogos</div>
-    <div class="nav-item" onclick="switchView('aba-treino', event)">📋 Relatório de Treino</div>
-    <div class="nav-item" onclick="switchView('aba-atleta', event)">👤 Cartão do Atleta</div>
-    <div class="nav-item" onclick="switchView('aba-conteudos', event)">🗺️ Mapa de Conteúdos</div>
+    <div class="nav-item active" onclick="switchView('aba-jogos', 'JOGOS', event)">📊 Jogos</div>
+    <div class="nav-item" onclick="switchView('aba-treino', 'TREINOS', event)">📋 Treinos</div>
+    <div class="nav-item" onclick="switchView('aba-atleta', 'CARTÃO DO ATLETA', event)">👤 Cartão do Atleta</div>
+    <div class="nav-item" onclick="switchView('aba-conteudos', 'MAPA DE CONTEÚDOS', event)">🗺️ Mapa de Conteúdos</div>
   </sidebar>
 
   <main>
@@ -104,6 +104,7 @@
       <div class="status-badge">● Sincronizado</div>
     </header>
 
+    <!-- BARRA DE FILTROS GLOBAIS -->
     <div class="filter-bar">
       <div class="filter-group">
         <label>Selecione o Mês</label>
@@ -117,20 +118,33 @@
         <label>Data Final</label>
         <input type="date" id="filter-date-end" onchange="applyFilters()">
       </div>
-      <div class="filter-group">
+      
+      <!-- Filtros Dinâmicos por Aba -->
+      <div class="filter-group filter-jogos-only">
         <label>Adversário</label>
         <select id="filter-adv" onchange="applyFilters()"><option value="ALL">Todos os Adversários</option></select>
       </div>
+      <div class="filter-group filter-jogos-only">
+        <label>Competição</label>
+        <select id="filter-comp" onchange="applyFilters()"><option value="ALL">Todas as Competições</option></select>
+      </div>
+
       <div class="filter-group">
         <label>Atleta</label>
         <select id="filter-player" onchange="applyFilters()"><option value="ALL">Todos os Atletas</option></select>
       </div>
-      <div class="filter-group">
-        <label>Competição</label>
-        <select id="filter-comp" onchange="applyFilters()"><option value="ALL">Todas as Competições</option></select>
+
+      <div class="filter-group filter-treinos-only" style="display:none;">
+        <label>Tópico Geral</label>
+        <select id="filter-topico" onchange="onTopicoChange()"><option value="ALL">Todos os Tópicos</option></select>
+      </div>
+      <div class="filter-group filter-treinos-only" style="display:none;">
+        <label>Conteúdo Específico</label>
+        <select id="filter-conteudo" onchange="applyFilters()"><option value="ALL">Todos os Conteúdos</option></select>
       </div>
     </div>
 
+    <!-- 1. ABA JOGOS -->
     <div id="aba-jogos" class="dashboard-view active">
       <div style="display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
         <div class="card" style="margin:0; width:150px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px;">
@@ -217,7 +231,43 @@
       </div>
     </div>
 
-    <div id="aba-treino" class="dashboard-view"><div class="card"><div class="card-header-bar">Aba em ajuste</div></div></div>
+    <!-- 2. ABA TREINOS -->
+    <div id="aba-treino" class="dashboard-view">
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-lbl">Nº de Treinos</div><div class="kpi-val" id="kpi-treino-qtd">0</div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Nota Média Sessões</div><div class="kpi-val" id="kpi-treino-nota-media">0.0</div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Minutagem Efetiva Total</div><div class="kpi-val" id="kpi-treino-min-total">0'</div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Média Mins/Treino</div><div class="kpi-val" id="kpi-treino-min-media">0'</div></div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header-bar">Frequência por Tópico Geral</div>
+          <div id="chart-treino-topicos"></div>
+        </div>
+        <div class="card">
+          <div class="card-header-bar">Frequência por Conteúdo Específico</div>
+          <div id="chart-treino-conteudos"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header-bar">Desempenho Individual por Atleta nos Treinos</div>
+        <div class="table-container">
+          <table id="table-treino-atletas">
+            <thead>
+              <tr>
+                <th>Atleta</th>
+                <th>Presenças em Treino</th>
+                <th>Nota Média Individual</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <div id="aba-atleta" class="dashboard-view"><div class="card"><div class="card-header-bar">Aba em ajuste</div></div></div>
     <div id="aba-conteudos" class="dashboard-view"><div class="card"><div class="card-header-bar">Aba em ajuste</div></div></div>
   </main>
@@ -226,10 +276,15 @@
     const URLS = {
       posJogo: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=2280537&single=true&output=csv",
       posJogoIndividual: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=2031698179&single=true&output=csv",
-      baseJogadores: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=1169457664&single=true&output=csv"
+      baseJogadores: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=1169457664&single=true&output=csv",
+      glossario: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=0&single=true&output=csv",
+      posTreino: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=833075677&single=true&output=csv",
+      posTreinoConteudo: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=733358826&single=true&output=csv",
+      posTreinoIndividual: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=1903445831&single=true&output=csv"
     };
 
     let DB = {};
+    let currentView = 'aba-jogos';
 
     function cleanString(str) {
       return (str || '').toString().trim().toLowerCase();
@@ -269,9 +324,14 @@
         DB.posJogo = await fetchCSV(URLS.posJogo);
         DB.posJogoIndividual = await fetchCSV(URLS.posJogoIndividual);
         DB.baseJogadores = await fetchCSV(URLS.baseJogadores);
+        DB.glossario = await fetchCSV(URLS.glossario);
+        DB.posTreino = await fetchCSV(URLS.posTreino);
+        DB.posTreinoConteudo = await fetchCSV(URLS.posTreinoConteudo);
+        DB.posTreinoIndividual = await fetchCSV(URLS.posTreinoIndividual);
 
         populateFilters();
         renderAbaJogos();
+        renderAbaTreinos();
         document.getElementById('loader').style.display = 'none';
       } catch (err) {
         console.error("Erro na inicialização:", err);
@@ -280,11 +340,21 @@
       }
     }
 
-    function switchView(viewId, event) {
+    function switchView(viewId, title, event) {
+      currentView = viewId;
       document.querySelectorAll('.dashboard-view').forEach(v => v.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
       document.getElementById(viewId).classList.add('active');
+      document.getElementById('view-title').innerText = title;
       if (event && event.target) event.target.classList.add('active');
+
+      if (viewId === 'aba-treino') {
+        document.querySelectorAll('.filter-jogos-only').forEach(e => e.style.display = 'none');
+        document.querySelectorAll('.filter-treinos-only').forEach(e => e.style.display = 'flex');
+      } else if (viewId === 'aba-jogos') {
+        document.querySelectorAll('.filter-jogos-only').forEach(e => e.style.display = 'flex');
+        document.querySelectorAll('.filter-treinos-only').forEach(e => e.style.display = 'none');
+      }
     }
 
     function populateFilters() {
@@ -292,6 +362,7 @@
       const aSelect = document.getElementById('filter-adv');
       const cSelect = document.getElementById('filter-comp');
       const mSelect = document.getElementById('filter-month');
+      const tSelect = document.getElementById('filter-topico');
 
       const jogadores = [...new Set(DB.baseJogadores.map(j => toTitleCase((j['Nome'] || j['NOME'] || '').trim())))].filter(Boolean);
       jogadores.sort().forEach(j => pSelect.innerHTML += `<option value="${j}">${j}</option>`);
@@ -303,7 +374,7 @@
       comps.sort().forEach(c => cSelect.innerHTML += `<option value="${c}">${c}</option>`);
 
       let monthsSet = new Set();
-      DB.posJogo.forEach(j => {
+      [...(DB.posJogo || []), ...(DB.posTreino || [])].forEach(j => {
         const d = parseDateString(j['Data']);
         if (d) {
           const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -317,6 +388,38 @@
         const name = `${monthNames[parseInt(month)-1]} ${year}`;
         mSelect.innerHTML += `<option value="${m}">${name}</option>`;
       });
+
+      // Tópicos Gerais de Treino
+      let topicosSet = new Set();
+      (DB.posTreino || []).forEach(t => {
+        if (t['Tipo de conteúdo preparatória']) topicosSet.add(t['Tipo de conteúdo preparatória'].trim());
+        if (t['Tipo de conteúdo conceitual']) topicosSet.add(t['Tipo de conteúdo conceitual'].trim());
+      });
+      Array.from(topicosSet).sort().forEach(top => {
+        if(top) tSelect.innerHTML += `<option value="${top}">${top}</option>`;
+      });
+    }
+
+    function onTopicoChange() {
+      const topicoVal = document.getElementById('filter-topico').value;
+      const cSelect = document.getElementById('filter-conteudo');
+      cSelect.innerHTML = '<option value="ALL">Todos os Conteúdos</option>';
+
+      let conteudosSet = new Set();
+      (DB.posTreino || []).forEach(t => {
+        if (topicoVal === 'ALL' || t['Tipo de conteúdo preparatória'] === topicoVal) {
+          if (t['Conteúdo Preparatória']) conteudosSet.add(t['Conteúdo Preparatória'].trim());
+        }
+        if (topicoVal === 'ALL' || t['Tipo de conteúdo conceitual'] === topicoVal) {
+          if (t['Conteúdo Conceitual']) conteudosSet.add(t['Conteúdo Conceitual'].trim());
+        }
+      });
+
+      Array.from(conteudosSet).sort().forEach(c => {
+        if(c) cSelect.innerHTML += `<option value="${c}">${c}</option>`;
+      });
+
+      applyFilters();
     }
 
     function onMonthChange() {
@@ -334,9 +437,11 @@
     }
 
     function applyFilters() {
-      renderAbaJogos();
+      if (currentView === 'aba-jogos') renderAbaJogos();
+      else if (currentView === 'aba-treino') renderAbaTreinos();
     }
 
+    // 1. LÓGICA DA ABA JOGOS
     function renderAbaJogos() {
       const dStartVal = document.getElementById('filter-date-start').value;
       const dEndVal = document.getElementById('filter-date-end').value;
@@ -516,6 +621,157 @@
         document.getElementById('jogos-foto').style.display = 'none';
         document.getElementById('jogos-silhueta').style.display = 'block';
       }
+    }
+
+    // 2. LÓGICA DA ABA TREINOS
+    function renderAbaTreinos() {
+      const dStartVal = document.getElementById('filter-date-start').value;
+      const dEndVal = document.getElementById('filter-date-end').value;
+      const fPlayer = document.getElementById('filter-player').value;
+      const fTopico = document.getElementById('filter-topico').value;
+      const fConteudo = document.getElementById('filter-conteudo').value;
+
+      let posTreino = DB.posTreino || [];
+      let posTreinoInd = DB.posTreinoIndividual || [];
+
+      // Filtro de Datas
+      if (dStartVal || dEndVal) {
+        const dStart = dStartVal ? new Date(dStartVal + 'T00:00:00') : null;
+        const dEnd = dEndVal ? new Date(dEndVal + 'T23:59:59') : null;
+
+        posTreino = posTreino.filter(t => {
+          const d = parseDateString(t['Data']);
+          if (!d) return false;
+          if (dStart && d < dStart) return false;
+          if (dEnd && d > dEnd) return false;
+          return true;
+        });
+      }
+
+      // Filtro Tópico Geral / Conteúdo Específico
+      if (fTopico !== 'ALL') {
+        posTreino = posTreino.filter(t => 
+          (t['Tipo de conteúdo preparatória'] || '').trim() === fTopico ||
+          (t['Tipo de conteúdo conceitual'] || '').trim() === fTopico
+        );
+      }
+
+      if (fConteudo !== 'ALL') {
+        posTreino = posTreino.filter(t => 
+          (t['Conteúdo Preparatória'] || '').trim() === fConteudo ||
+          (t['Conteúdo Conceitual'] || '').trim() === fConteudo
+        );
+      }
+
+      // Cálculo dos KPIs de Treino
+      let totalTreinos = posTreino.length;
+      let somaNotas = 0, somaMin = 0;
+
+      posTreino.forEach(t => {
+        somaNotas += parseFloat(t['Nota geral da sessão (0 a 10)'] || 0);
+        somaMin += parseInt(t['Minutagem efetiva'] || 0);
+      });
+
+      let notaMedia = totalTreinos > 0 ? (somaNotas / totalTreinos).toFixed(1) : '0.0';
+      let minMedia = totalTreinos > 0 ? Math.round(somaMin / totalTreinos) : 0;
+
+      document.getElementById('kpi-treino-qtd').innerText = totalTreinos;
+      document.getElementById('kpi-treino-nota-media').innerText = notaMedia;
+      document.getElementById('kpi-treino-min-total').innerText = somaMin + "'";
+      document.getElementById('kpi-treino-min-media').innerText = minMedia + "'";
+
+      // Contagem e Frequência por Tópico e Conteúdo
+      let topicosCount = {};
+      let conteudosCount = {};
+      let maxTop = 1, maxCont = 1;
+
+      posTreino.forEach(t => {
+        const topPrep = (t['Tipo de conteúdo preparatória'] || '').trim();
+        const topConc = (t['Tipo de conteúdo conceitual'] || '').trim();
+        const contPrep = (t['Conteúdo Preparatória'] || '').trim();
+        const contConc = (t['Conteúdo Conceitual'] || '').trim();
+
+        if (topPrep) {
+          topicosCount[topPrep] = (topicosCount[topPrep] || 0) + 1;
+          if (topicosCount[topPrep] > maxTop) maxTop = topicosCount[topPrep];
+        }
+        if (topConc) {
+          topicosCount[topConc] = (topicosCount[topConc] || 0) + 1;
+          if (topicosCount[topConc] > maxTop) maxTop = topicosCount[topConc];
+        }
+
+        if (contPrep) {
+          conteudosCount[contPrep] = (conteudosCount[contPrep] || 0) + 1;
+          if (conteudosCount[contPrep] > maxCont) maxCont = conteudosCount[contPrep];
+        }
+        if (contConc) {
+          conteudosCount[contConc] = (conteudosCount[contConc] || 0) + 1;
+          if (conteudosCount[contConc] > maxCont) maxCont = conteudosCount[contConc];
+        }
+      });
+
+      const topChart = document.getElementById('chart-treino-topicos');
+      topChart.innerHTML = '';
+      Object.keys(topicosCount).forEach(top => {
+        const pct = Math.round((topicosCount[top] / maxTop) * 100);
+        topChart.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label">${top}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+            <div class="bar-val">${topicosCount[top]}x</div>
+          </div>
+        `;
+      });
+
+      const contChart = document.getElementById('chart-treino-conteudos');
+      contChart.innerHTML = '';
+      Object.keys(conteudosCount).forEach(c => {
+        const pct = Math.round((conteudosCount[c] / maxCont) * 100);
+        contChart.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label">${c}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+            <div class="bar-val">${conteudosCount[c]}x</div>
+          </div>
+        `;
+      });
+
+      // Tabela de Desempenho por Atleta nos Treinos
+      const datesInFilteredTreinos = new Set(posTreino.map(t => (t['Data'] || '').trim()));
+      const tbodyAtleta = document.querySelector('#table-treino-atletas tbody');
+      tbodyAtleta.innerHTML = '';
+
+      let playerStats = {};
+
+      (DB.posTreinoIndividual || []).forEach(row => {
+        const rawNome = (row['Nome'] || row['NOME'] || '').trim();
+        const nome = toTitleCase(rawNome);
+        if (!nome) return;
+
+        if (fPlayer !== 'ALL' && cleanString(fPlayer) !== cleanString(nome)) return;
+
+        Object.keys(row).forEach(dateCol => {
+          if (datesInFilteredTreinos.has(dateCol.trim())) {
+            const notaVal = parseFloat(row[dateCol]);
+            if (!isNaN(notaVal) && notaVal > 0) {
+              if (!playerStats[nome]) playerStats[nome] = { count: 0, sum: 0 };
+              playerStats[nome].count += 1;
+              playerStats[nome].sum += notaVal;
+            }
+          }
+        });
+      });
+
+      Object.keys(playerStats).sort().forEach(p => {
+        const avg = (playerStats[p].sum / playerStats[p].count).toFixed(1);
+        tbodyAtleta.innerHTML += `
+          <tr>
+            <td><b>${p}</b></td>
+            <td>${playerStats[p].count} sessões</td>
+            <td><b>${avg}</b></td>
+          </tr>
+        `;
+      });
     }
 
     window.onload = initDashboard;
