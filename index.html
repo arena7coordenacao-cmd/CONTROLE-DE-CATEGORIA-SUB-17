@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Categoria Sub-17 | Performance & Análise</title>
+  <!-- Biblioteca de alta precisão para conversão de CSV/Google Sheets -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #f4f6f9;
+      --bg-card: #ffffff;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --green-primary: #15803d;
+      --green-secondary: #22c55e;
+      --green-dark: #0e5229;
+      --border-color: #e5e7eb;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body { background-color: var(--bg-primary); color: var(--text-main); display: flex; min-height: 100vh; }
+
+    sidebar {
+      width: 250px; background-color: var(--green-dark); color: white;
+      padding: 24px 16px; display: flex; flex-direction: column; gap: 20px;
+      position: fixed; height: 100vh;
+    }
+
+    .brand { font-size: 1.2rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 12px; }
+    .nav-item { padding: 10px 14px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 600; color: #d1fae5; transition: 0.2s; }
+    .nav-item:hover, .nav-item.active { background-color: var(--green-secondary); color: #052e16; }
+
+    main { margin-left: 250px; flex: 1; padding: 24px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: var(--bg-card); padding: 16px 20px; border-radius: 8px; box-shadow: var(--shadow); }
+    .page-title { font-size: 1.4rem; font-weight: 700; color: var(--green-primary); }
+    .status-badge { font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; background: #dcfce7; color: #166534; font-weight: 700; }
+
+    .filter-bar { display: flex; gap: 12px; background: var(--bg-card); padding: 14px; border-radius: 8px; margin-bottom: 20px; box-shadow: var(--shadow); }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .filter-group label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); }
+    .filter-group select { padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border-color); }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .kpi-card { background: var(--bg-card); padding: 14px; border-radius: 8px; box-shadow: var(--shadow); text-align: center; border-top: 3px solid var(--green-primary); }
+    .kpi-val { font-size: 1.5rem; font-weight: 800; }
+    .kpi-lbl { font-size: 0.7rem; color: var(--text-muted); font-weight: 700; }
+
+    .dashboard-view { display: none; }
+    .dashboard-view.active { display: block; }
+    .card { background: var(--bg-card); padding: 18px; border-radius: 8px; box-shadow: var(--shadow); margin-bottom: 20px; }
+    .card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: var(--green-dark); }
+
+    .table-container { overflow-x: auto; max-height: 360px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); }
+    th { background: var(--bg-primary); position: sticky; top: 0; }
+
+    #loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; font-weight: 700; color: var(--green-primary); }
+    .spinner { width: 40px; height: 40px; border: 4px solid var(--border-color); border-top-color: var(--green-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <div id="loader">
+    <div class="spinner"></div>
+    <span id="loader-msg">Carregando e processando planilhas do Google...</span>
+  </div>
+
+  <sidebar>
+    <div class="brand">⚽ SUB-17 | 2026</div>
+    <div class="nav-item active" onclick="switchView('pos-jogo', event)">📊 Relatório Pós-Jogo</div>
+    <div class="nav-item" onclick="switchView('relatorio-treino', event)">📋 Relatório de Treino</div>
+    <div class="nav-item" onclick="switchView('cartao-atleta', event)">👤 Cartão do Atleta</div>
+  </sidebar>
+
+  <main>
+    <header>
+      <div class="page-title" id="view-title">Relatório Pós-Jogo</div>
+      <div class="status-badge" id="data-status">● Sincronizado</div>
+    </header>
+
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Atleta</label>
+        <select id="filter-player" onchange="applyFilters()"><option value="ALL">Todos os Atletas</option></select>
+      </div>
+    </div>
+
+    <!-- 1. PÓS-JOGO -->
+    <div id="pos-jogo" class="dashboard-view active">
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-lbl">Nº de Jogos</div><div class="kpi-val" id="kpi-jogos">0</div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Vitórias</div><div class="kpi-val" id="kpi-vitorias">0</div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Empates</div><div class="kpi-val" id="kpi-empates">0</div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Derrotas</div><div class="kpi-val" id="kpi-derrotas">0</div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Gols Feitos</div><div class="kpi-val" id="kpi-gols-pro">0</div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Gols Sofridos</div><div class="kpi-val" id="kpi-gols-contra">0</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Desempenho Individual nos Jogos</div>
+        <div class="table-container">
+          <table id="table-jogos-atleta">
+            <thead>
+              <tr>
+                <th>Jogador</th>
+                <th>Minutagem Total</th>
+                <th>Gols Feitos</th>
+                <th>Assistências</th>
+                <th>Cartões A</th>
+                <th>Cartões V</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. RELATÓRIO DE TREINO -->
+    <div id="relatorio-treino" class="dashboard-view">
+      <div class="card">
+        <div class="card-title">Elenco Registrado</div>
+        <div class="table-container">
+          <table id="table-treino-atleta">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Pé Dominante</th>
+                <th>Quartil</th>
+                <th>Posição</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. CARTÃO DO ATLETA -->
+    <div id="cartao-atleta" class="dashboard-view">
+      <div class="card">
+        <div class="card-title">Ficha Técnica</div>
+        <p><b>Posição:</b> <span id="card-pos">---</span></p>
+        <p><b>Pé Dominante:</b> <span id="card-pe">---</span></p>
+        <p><b>Quartil:</b> <span id="card-quartil">---</span></p>
+        <p><b>Características:</b> <span id="card-carac">---</span></p>
+        <p><b>Pontos a Melhorar:</b> <span id="card-melhorar">---</span></p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const URLS = {
+      posJogo: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=2280537&single=true&output=csv",
+      posJogoIndividual: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=2031698179&single=true&output=csv",
+      baseJogadores: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=1169457664&single=true&output=csv"
+    };
+
+    let DB = {};
+
+    function fetchCSV(url) {
+      return new Promise((resolve, reject) => {
+        Papa.parse(url, {
+          download: true,
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => resolve(results.data),
+          error: (err) => reject(err)
+        });
+      });
+    }
+
+    async function initDashboard() {
+      try {
+        DB.posJogo = await fetchCSV(URLS.posJogo);
+        DB.posJogoIndividual = await fetchCSV(URLS.posJogoIndividual);
+        DB.baseJogadores = await fetchCSV(URLS.baseJogadores);
+
+        populateFilters();
+        renderAllViews();
+        document.getElementById('loader').style.display = 'none';
+      } catch (err) {
+        console.error("Erro na carga:", err);
+        document.getElementById('loader-msg').innerText = "Erro ao conectar com as planilhas. Tente abrir o arquivo em um servidor local ou verifique sua conexão.";
+        document.getElementById('loader-msg').style.color = "red";
+      }
+    }
+
+    function switchView(viewId, event) {
+      document.querySelectorAll('.dashboard-view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      document.getElementById(viewId).classList.add('active');
+      if (event) event.target.classList.add('active');
+    }
+
+    function populateFilters() {
+      const playerSelect = document.getElementById('filter-player');
+      const jogadores = [...new Set(DB.baseJogadores.map(j => j['Nome']))].filter(Boolean);
+      jogadores.forEach(j => playerSelect.innerHTML += `<option value="${j}">${j}</option>`);
+    }
+
+    function applyFilters() {
+      renderAllViews();
+    }
+
+    function renderAllViews() {
+      // KPI e Tabela Pós-Jogo
+      let vit = 0, emp = 0, der = 0, gPro = 0, gContra = 0;
+      (DB.posJogo || []).forEach(j => {
+        const res = (j['Resultado'] || '').toLowerCase();
+        if (res.includes('vit')) vit++;
+        else if (res.includes('emp')) emp++;
+        else if (res.includes('der')) der++;
+        gPro += parseInt(j['Gols feitos'] || 0);
+        gContra += parseInt(j['Gols sofridos'] || 0);
+      });
+
+      document.getElementById('kpi-jogos').innerText = DB.posJogo.length;
+      document.getElementById('kpi-vitorias').innerText = vit;
+      document.getElementById('kpi-empates').innerText = emp;
+      document.getElementById('kpi-derrotas').innerText = der;
+      document.getElementById('kpi-gols-pro').innerText = gPro;
+      document.getElementById('kpi-gols-contra').innerText = gContra;
+
+      const tbodyJogo = document.querySelector('#table-jogos-atleta tbody');
+      tbodyJogo.innerHTML = '';
+      let stats = {};
+
+      (DB.posJogoIndividual || []).forEach(r => {
+        const nome = r['NOME'] || r['Jogador'];
+        if (!nome || r['Titularidade'] === 'Não-relacionado') return;
+        if (!stats[nome]) stats[nome] = { min: 0, gols: 0, ass: 0, ca: 0, cv: 0 };
+        stats[nome].min += parseInt(r['Minutagem'] || 0);
+        stats[nome].gols += parseInt(r['Gols feitos'] || 0);
+        stats[nome].ass += parseInt(r['Assistências'] || 0);
+        stats[nome].ca += parseInt(r['Cartão amarelo'] || 0);
+        stats[nome].cv += parseInt(r['Cartão vermelho'] || 0);
+      });
+
+      Object.keys(stats).forEach(p => {
+        tbodyJogo.innerHTML += `<tr>
+          <td><b>${p}</b></td>
+          <td>${stats[p].min}'</td>
+          <td>${stats[p].gols}</td>
+          <td>${stats[p].ass}</td>
+          <td>${stats[p].ca}</td>
+          <td>${stats[p].cv}</td>
+        </tr>`;
+      });
+
+      // Elenco
+      const tbodyTreino = document.querySelector('#table-treino-atleta tbody');
+      tbodyTreino.innerHTML = '';
+      (DB.baseJogadores || []).forEach(b => {
+        tbodyTreino.innerHTML += `<tr>
+          <td><b>${b['Nome']}</b></td>
+          <td>${b['Pé dominante'] || '-'}</td>
+          <td>${b['Quartil'] || '-'}</td>
+          <td>${b['Posição'] || '-'}</td>
+        </tr>`;
+      });
+
+      // Cartão Atleta
+      const selectedPlayer = document.getElementById('filter-player').value;
+      const ath = (DB.baseJogadores || []).find(j => j['Nome'] === selectedPlayer);
+      if (ath) {
+        document.getElementById('card-pos').innerText = ath['Posição'] || '---';
+        document.getElementById('card-pe').innerText = ath['Pé dominante'] || '---';
+        document.getElementById('card-quartil').innerText = ath['Quartil'] || '---';
+        document.getElementById('card-carac').innerText = ath['Característica'] || '---';
+        document.getElementById('card-melhorar').innerText = ath['Pontos a melhorar'] || '---';
+      }
+    }
+
+    window.onload = initDashboard;
+  </script>
+</body>
+</html>
