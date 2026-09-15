@@ -694,17 +694,19 @@
 
       // Filtro Tópico Geral
       if (fTopico !== 'ALL') {
+        const targetTopico = cleanString(fTopico);
         posTreino = posTreino.filter(t => 
-          cleanString(getVal(t, ['Tipo de conteudo preparatoria', 'Tipo de conteudo preparatória'])) === cleanString(fTopico) ||
-          cleanString(getVal(t, ['Tipo de conteudo conceitual', 'Tipo de conteúdo conceitual'])) === cleanString(fTopico)
+          cleanString(getVal(t, ['Tipo de conteudo preparatoria', 'Tipo de conteudo preparatória'])) === targetTopico ||
+          cleanString(getVal(t, ['Tipo de conteudo conceitual', 'Tipo de conteúdo conceitual'])) === targetTopico
         );
       }
 
       // Filtro Conteúdo Específico
       if (fConteudo !== 'ALL') {
+        const targetConteudo = cleanString(fConteudo);
         posTreino = posTreino.filter(t => 
-          cleanString(getVal(t, ['Conteudo Preparatoria', 'Conteudo Preparatória'])) === cleanString(fConteudo) ||
-          cleanString(getVal(t, ['Conteudo Conceitual'])) === cleanString(fConteudo)
+          cleanString(getVal(t, ['Conteudo Preparatoria', 'Conteudo Preparatória'])) === targetConteudo ||
+          cleanString(getVal(t, ['Conteudo Conceitual'])) === targetConteudo
         );
       }
 
