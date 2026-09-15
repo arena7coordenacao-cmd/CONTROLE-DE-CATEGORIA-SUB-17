@@ -714,7 +714,7 @@
       let somaNotas = 0, somaMin = 0;
 
       posTreino.forEach(t => {
-        somaNotas += parseNum(getVal(t, ['Nota geral da sessao', 'Nota geral da sessão']));
+        somaNotas += parseNum(getVal(t, ['Desempenho geral da sessao', 'Nota geral da sessao', 'Nota geral da sessão']));
         somaMin += parseNum(getVal(t, ['Minutagem efetiva']));
       });
 
