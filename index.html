@@ -421,8 +421,8 @@
 
       let topicosSet = new Set();
       (DB.posTreino || []).forEach(t => {
-        const topPrep = getVal(t, ['Tipo de conteúdo preparatória', 'Tipo de conteudo preparatoria']);
-        const topConc = getVal(t, ['Tipo de conteúdo conceitual', 'Tipo de conteudo conceitual']);
+        const topPrep = getVal(t, ['Tipo de conteudo preparatoria', 'Tipo de conteudo preparatoria']);
+        const topConc = getVal(t, ['Tipo de conteudo conceitual', 'Tipo de conteudo conceitual']);
         if (topPrep) topicosSet.add(topPrep);
         if (topConc) topicosSet.add(topConc);
       });
@@ -438,10 +438,10 @@
 
       let conteudosSet = new Set();
       (DB.posTreino || []).forEach(t => {
-        const topPrep = getVal(t, ['Tipo de conteúdo preparatória', 'Tipo de conteudo preparatoria']);
-        const topConc = getVal(t, ['Tipo de conteúdo conceitual', 'Tipo de conteudo conceitual']);
-        const contPrep = getVal(t, ['Conteúdo Preparatória', 'Conteudo Preparatoria']);
-        const contConc = getVal(t, ['Conteúdo Conceitual', 'Conteudo Conceitual']);
+        const topPrep = getVal(t, ['Tipo de conteudo preparatoria']);
+        const topConc = getVal(t, ['Tipo de conteudo conceitual']);
+        const contPrep = getVal(t, ['Conteudo Preparatoria']);
+        const contConc = getVal(t, ['Conteudo Conceitual']);
 
         if (topicoVal === 'ALL' || topPrep === topicoVal) {
           if (contPrep) conteudosSet.add(contPrep);
@@ -692,16 +692,16 @@
       // Filtro Tópico Geral
       if (fTopico !== 'ALL') {
         posTreino = posTreino.filter(t => 
-          getVal(t, ['Tipo de conteúdo preparatória', 'Tipo de conteudo preparatoria']) === fTopico ||
-          getVal(t, ['Tipo de conteúdo conceitual', 'Tipo de conteudo conceitual']) === fTopico
+          getVal(t, ['Tipo de conteudo preparatoria']) === fTopico ||
+          getVal(t, ['Tipo de conteudo conceitual']) === fTopico
         );
       }
 
       // Filtro Conteúdo Específico
       if (fConteudo !== 'ALL') {
         posTreino = posTreino.filter(t => 
-          getVal(t, ['Conteúdo Preparatória', 'Conteudo Preparatoria']) === fConteudo ||
-          getVal(t, ['Conteúdo Conceitual', 'Conteudo Conceitual']) === fConteudo
+          getVal(t, ['Conteudo Preparatoria']) === fConteudo ||
+          getVal(t, ['Conteudo Conceitual']) === fConteudo
         );
       }
 
@@ -709,8 +709,8 @@
       let somaNotas = 0, somaMin = 0;
 
       posTreino.forEach(t => {
-        somaNotas += parseNum(getVal(t, ['Nota geral da sessão', 'Nota geral da sessao', 'Nota geral da sessão (0 a 10)']));
-        somaMin += parseNum(getVal(t, ['Minutagem efetiva', 'Minutagem Efetiva']));
+        somaNotas += parseNum(getVal(t, ['Nota geral da sessao']));
+        somaMin += parseNum(getVal(t, ['Minutagem efetiva']));
       });
 
       let notaMedia = totalTreinos > 0 ? (somaNotas / totalTreinos).toFixed(1) : '0.0';
@@ -726,10 +726,10 @@
       let maxTop = 1, maxCont = 1;
 
       posTreino.forEach(t => {
-        const topPrep = getVal(t, ['Tipo de conteúdo preparatória', 'Tipo de conteudo preparatoria']);
-        const topConc = getVal(t, ['Tipo de conteúdo conceitual', 'Tipo de conteudo conceitual']);
-        const contPrep = getVal(t, ['Conteúdo Preparatória', 'Conteudo Preparatoria']);
-        const contConc = getVal(t, ['Conteúdo Conceitual', 'Conteudo Conceitual']);
+        const topPrep = getVal(t, ['Tipo de conteudo preparatoria']);
+        const topConc = getVal(t, ['Tipo de conteudo conceitual']);
+        const contPrep = getVal(t, ['Conteudo Preparatoria']);
+        const contConc = getVal(t, ['Conteudo Conceitual']);
 
         if (topPrep) {
           topicosCount[topPrep] = (topicosCount[topPrep] || 0) + 1;
