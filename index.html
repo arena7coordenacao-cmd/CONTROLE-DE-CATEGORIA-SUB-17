@@ -424,10 +424,10 @@
 
       let topicosSet = new Set();
       (DB.posTreino || []).forEach(t => {
-        const topPrep = getVal(t, ['Tipo de conteudo preparatória', 'Tipo de conteudo preparatoria']);
+        const topPrep = getVal(t, ['Tipo de conteudo preparatoria', 'Tipo de conteudo preparatória']);
         const topConc = getVal(t, ['Tipo de conteudo conceitual', 'Tipo de conteúdo conceitual']);
-        if (topPrep) topicosSet.add(topPrep);
-        if (topConc) topicosSet.add(topConc);
+        if (topPrep && cleanString(topPrep) !== 'nao aplicado') topicosSet.add(topPrep);
+        if (topConc && cleanString(topConc) !== 'nao aplicado') topicosSet.add(topConc);
       });
       Array.from(topicosSet).sort().forEach(top => {
         if(top) tSelect.innerHTML += `<option value="${top}">${top}</option>`;
@@ -441,15 +441,15 @@
 
       let conteudosSet = new Set();
       (DB.posTreino || []).forEach(t => {
-        const topPrep = getVal(t, ['Tipo de conteudo preparatória', 'Tipo de conteudo preparatoria']);
+        const topPrep = getVal(t, ['Tipo de conteudo preparatoria', 'Tipo de conteudo preparatória']);
         const topConc = getVal(t, ['Tipo de conteudo conceitual', 'Tipo de conteúdo conceitual']);
         const contPrep = getVal(t, ['Conteudo Preparatoria', 'Conteudo Preparatória']);
-        const contConc = getVal(t, ['Conteudo Conceitual', 'Conteudo Conceitual']);
+        const contConc = getVal(t, ['Conteudo Conceitual']);
 
-        if (topicoVal === 'ALL' || topPrep === topicoVal) {
+        if ((topicoVal === 'ALL' || cleanString(topPrep) === cleanString(topicoVal)) && cleanString(contPrep) !== 'nao aplicado') {
           if (contPrep) conteudosSet.add(contPrep);
         }
-        if (topicoVal === 'ALL' || topConc === topicoVal) {
+        if ((topicoVal === 'ALL' || cleanString(topConc) === cleanString(topicoVal)) && cleanString(contConc) !== 'nao aplicado') {
           if (contConc) conteudosSet.add(contConc);
         }
       });
@@ -512,8 +512,8 @@
         });
       }
 
-      if (fAdv !== 'ALL') posJogo = posJogo.filter(j => getVal(j, ['Adversario', 'Adversário']) === fAdv);
-      if (fComp !== 'ALL') posJogo = posJogo.filter(j => getVal(j, ['Competicao', 'Competição']) === fComp);
+      if (fAdv !== 'ALL') posJogo = posJogo.filter(j => cleanString(getVal(j, ['Adversario', 'Adversário'])) === cleanString(fAdv));
+      if (fComp !== 'ALL') posJogo = posJogo.filter(j => cleanString(getVal(j, ['Competicao', 'Competição'])) === cleanString(fComp));
 
       let athleteFiltered = (fPlayer !== 'ALL');
       let athleteGamesSet = new Set();
@@ -695,7 +695,7 @@
       // Filtro Tópico Geral
       if (fTopico !== 'ALL') {
         posTreino = posTreino.filter(t => 
-          cleanString(getVal(t, ['Tipo de conteudo preparatória', 'Tipo de conteudo preparatoria'])) === cleanString(fTopico) ||
+          cleanString(getVal(t, ['Tipo de conteudo preparatoria', 'Tipo de conteudo preparatória'])) === cleanString(fTopico) ||
           cleanString(getVal(t, ['Tipo de conteudo conceitual', 'Tipo de conteúdo conceitual'])) === cleanString(fTopico)
         );
       }
@@ -704,7 +704,7 @@
       if (fConteudo !== 'ALL') {
         posTreino = posTreino.filter(t => 
           cleanString(getVal(t, ['Conteudo Preparatoria', 'Conteudo Preparatória'])) === cleanString(fConteudo) ||
-          cleanString(getVal(t, ['Conteudo Conceitual', 'Conteudo Conceitual'])) === cleanString(fConteudo)
+          cleanString(getVal(t, ['Conteudo Conceitual'])) === cleanString(fConteudo)
         );
       }
 
@@ -729,25 +729,25 @@
       let maxTop = 1, maxCont = 1;
 
       posTreino.forEach(t => {
-        const topPrep = getVal(t, ['Tipo de conteudo preparatória', 'Tipo de conteudo preparatoria']);
+        const topPrep = getVal(t, ['Tipo de conteudo preparatoria', 'Tipo de conteudo preparatória']);
         const topConc = getVal(t, ['Tipo de conteudo conceitual', 'Tipo de conteúdo conceitual']);
         const contPrep = getVal(t, ['Conteudo Preparatoria', 'Conteudo Preparatória']);
         const contConc = getVal(t, ['Conteudo Conceitual']);
 
-        if (topPrep) {
+        if (topPrep && cleanString(topPrep) !== 'nao aplicado') {
           topicosCount[topPrep] = (topicosCount[topPrep] || 0) + 1;
           if (topicosCount[topPrep] > maxTop) maxTop = topicosCount[topPrep];
         }
-        if (topConc) {
+        if (topConc && cleanString(topConc) !== 'nao aplicado') {
           topicosCount[topConc] = (topicosCount[topConc] || 0) + 1;
           if (topicosCount[topConc] > maxTop) maxTop = topicosCount[topConc];
         }
 
-        if (contPrep) {
+        if (contPrep && cleanString(contPrep) !== 'nao aplicado') {
           conteudosCount[contPrep] = (conteudosCount[contPrep] || 0) + 1;
           if (conteudosCount[contPrep] > maxCont) maxCont = conteudosCount[contPrep];
         }
-        if (contConc) {
+        if (contConc && cleanString(contConc) !== 'nao aplicado') {
           conteudosCount[contConc] = (conteudosCount[contConc] || 0) + 1;
           if (conteudosCount[contConc] > maxCont) maxCont = conteudosCount[contConc];
         }
