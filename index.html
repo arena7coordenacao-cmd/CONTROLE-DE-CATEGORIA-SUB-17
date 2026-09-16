@@ -719,8 +719,9 @@
       let somaNotas = 0, somaMin = 0;
 
       posTreino.forEach(t => {
-        somaNotas += parseNum(getVal(t, ['Desempenho geral da sessao', 'Nota geral da sessao', 'Nota geral da sessão']));
-        somaMin += parseNum(getVal(t, ['Minutagem efetiva']));
+        // Mapeamento correto da nota geral da sessão
+        somaNotas += parseNum(getVal(t, ['Desempenho geral da sessao', 'Desempenho geral da sessão', 'Nota geral da sessao', 'Nota geral da sessão']));
+        somaMin += parseNum(getVal(t, ['Minutagem efetiva', 'Minutagem do treino']));
       });
 
       let notaMedia = totalTreinos > 0 ? (somaNotas / totalTreinos).toFixed(1) : '0.0';
@@ -786,6 +787,7 @@
         `;
       });
 
+      // Sanitização de colunas de datas na aba Pos Treino Individual
       const datesInFilteredTreinos = new Set(posTreino.map(t => getVal(t, ['Data', 'DATA'])));
       const tbodyAtleta = document.querySelector('#table-treino-atletas tbody');
       tbodyAtleta.innerHTML = '';
@@ -800,7 +802,8 @@
         if (fPlayer !== 'ALL' && cleanString(fPlayer) !== cleanString(nome)) return;
 
         Object.keys(row).forEach(dateCol => {
-          if (datesInFilteredTreinos.has(dateCol.trim())) {
+          const cleanDateCol = dateCol.trim();
+          if (datesInFilteredTreinos.has(cleanDateCol)) {
             const notaVal = parseNum(row[dateCol]);
             if (notaVal > 0) {
               if (!playerStats[nome]) playerStats[nome] = { count: 0, sum: 0 };
