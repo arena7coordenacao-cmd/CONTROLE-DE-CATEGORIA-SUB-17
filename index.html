@@ -408,7 +408,6 @@
       mSelect.innerHTML = '<option value="ALL">Todos os Meses</option>';
       tSelect.innerHTML = '<option value="ALL">Todos os Tópicos</option>';
 
-      // Atletas vêm da base de jogadores e das tabelas individuais
       let jogadoresSet = new Set();
       (DB.baseJogadores || []).forEach(j => {
         const n = toTitleCase(getVal(j, ['Nome', 'NOME']));
@@ -804,7 +803,6 @@
         `;
       });
 
-      // Mapeamento Flexível de Datas e Notas da Aba Pos Treino Individual
       const datesInFilteredTreinos = new Set(posTreino.map(t => cleanString(getVal(t, ['Data', 'DATA']))));
       const tbodyAtleta = document.querySelector('#table-treino-atletas tbody');
       tbodyAtleta.innerHTML = '';
