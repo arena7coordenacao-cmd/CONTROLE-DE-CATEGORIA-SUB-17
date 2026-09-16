@@ -402,13 +402,29 @@
       const mSelect = document.getElementById('filter-month');
       const tSelect = document.getElementById('filter-topico');
 
-      const jogadores = [...new Set(DB.baseJogadores.map(j => toTitleCase(getVal(j, ['Nome', 'NOME']))))].filter(Boolean);
-      jogadores.sort().forEach(j => pSelect.innerHTML += `<option value="${j}">${j}</option>`);
+      pSelect.innerHTML = '<option value="ALL">Todos os Atletas</option>';
+      aSelect.innerHTML = '<option value="ALL">Todos os Adversários</option>';
+      cSelect.innerHTML = '<option value="ALL">Todas as Competições</option>';
+      mSelect.innerHTML = '<option value="ALL">Todos os Meses</option>';
+      tSelect.innerHTML = '<option value="ALL">Todos os Tópicos</option>';
 
-      const advs = [...new Set(DB.posJogo.map(j => getVal(j, ['Adversario', 'Adversário'])))].filter(Boolean);
+      // Atletas vêm da base de jogadores e das tabelas individuais
+      let jogadoresSet = new Set();
+      (DB.baseJogadores || []).forEach(j => {
+        const n = toTitleCase(getVal(j, ['Nome', 'NOME']));
+        if (n) jogadoresSet.add(n);
+      });
+      (DB.posTreinoIndividual || []).forEach(j => {
+        const n = toTitleCase(getVal(j, ['Nome', 'NOME']));
+        if (n) jogadoresSet.add(n);
+      });
+
+      Array.from(jogadoresSet).sort().forEach(j => pSelect.innerHTML += `<option value="${j}">${j}</option>`);
+
+      const advs = [...new Set((DB.posJogo || []).map(j => getVal(j, ['Adversario', 'Adversário'])))].filter(Boolean);
       advs.sort().forEach(a => aSelect.innerHTML += `<option value="${a}">${a}</option>`);
 
-      const comps = [...new Set(DB.posJogo.map(j => getVal(j, ['Competicao', 'Competição'])))].filter(Boolean);
+      const comps = [...new Set((DB.posJogo || []).map(j => getVal(j, ['Competicao', 'Competição'])))].filter(Boolean);
       comps.sort().forEach(c => cSelect.innerHTML += `<option value="${c}">${c}</option>`);
 
       let monthsSet = new Set();
@@ -437,6 +453,8 @@
       Array.from(topicosSet).sort().forEach(top => {
         if(top) tSelect.innerHTML += `<option value="${top}">${top}</option>`;
       });
+
+      onTopicoChange();
     }
 
     function onTopicoChange() {
@@ -719,7 +737,6 @@
       let somaNotas = 0, somaMin = 0;
 
       posTreino.forEach(t => {
-        // Mapeamento correto da nota geral da sessão
         somaNotas += parseNum(getVal(t, ['Desempenho geral da sessao', 'Desempenho geral da sessão', 'Nota geral da sessao', 'Nota geral da sessão']));
         somaMin += parseNum(getVal(t, ['Minutagem efetiva', 'Minutagem do treino']));
       });
@@ -774,7 +791,7 @@
         `;
       });
 
-      const contChart = document.getElementById('chart-treino-conteudos');
+      const contChart = document.querySelector('#chart-treino-conteudos');
       contChart.innerHTML = '';
       Object.keys(conteudosCount).forEach(c => {
         const pct = Math.round((conteudosCount[c] / maxCont) * 100);
@@ -787,8 +804,8 @@
         `;
       });
 
-      // Sanitização de colunas de datas na aba Pos Treino Individual
-      const datesInFilteredTreinos = new Set(posTreino.map(t => getVal(t, ['Data', 'DATA'])));
+      // Mapeamento Flexível de Datas e Notas da Aba Pos Treino Individual
+      const datesInFilteredTreinos = new Set(posTreino.map(t => cleanString(getVal(t, ['Data', 'DATA']))));
       const tbodyAtleta = document.querySelector('#table-treino-atletas tbody');
       tbodyAtleta.innerHTML = '';
 
@@ -802,7 +819,7 @@
         if (fPlayer !== 'ALL' && cleanString(fPlayer) !== cleanString(nome)) return;
 
         Object.keys(row).forEach(dateCol => {
-          const cleanDateCol = dateCol.trim();
+          const cleanDateCol = cleanString(dateCol);
           if (datesInFilteredTreinos.has(cleanDateCol)) {
             const notaVal = parseNum(row[dateCol]);
             if (notaVal > 0) {
