@@ -68,7 +68,7 @@
     .bar-label { width: 180px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
     .bar-track { flex: 1; background: #e2e8f0; height: 14px; border-radius: 7px; overflow: hidden; margin: 0 10px; }
     .bar-fill { background: #15803d; height: 100%; border-radius: 7px; }
-    .bar-val { width: 130px; font-weight: 700; text-align: right; font-size: 0.72rem; }
+    .bar-val { width: 145px; font-weight: 700; text-align: right; font-size: 0.72rem; }
 
     .col-chart-container { display: flex; align-items: flex-end; justify-content: space-around; height: 180px; padding-top: 20px; border-bottom: 2px solid var(--border-color); }
     .col-item { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 30%; }
@@ -400,7 +400,6 @@
       mSelect.innerHTML = '<option value="ALL">Todos os Meses</option>';
       tSelect.innerHTML = '<option value="ALL">Todos os Tópicos</option>';
 
-      // Atletas
       let jogadoresSet = new Set();
       (DB.baseJogadores || []).forEach(j => {
         const n = toTitleCase(getVal(j, 'Nome'));
@@ -412,15 +411,12 @@
       });
       Array.from(jogadoresSet).sort().forEach(j => pSelect.innerHTML += `<option value="${j}">${j}</option>`);
 
-      // Adversários
       const advs = [...new Set((DB.posJogo || []).map(j => getVal(j, 'Adversario')))].filter(Boolean);
       advs.sort().forEach(a => aSelect.innerHTML += `<option value="${a}">${a}</option>`);
 
-      // Competições
       const comps = [...new Set((DB.posJogo || []).map(j => getVal(j, 'Competicao')))].filter(Boolean);
       comps.sort().forEach(c => cSelect.innerHTML += `<option value="${c}">${c}</option>`);
 
-      // Meses
       let monthsSet = new Set();
       [...(DB.posJogo || []), ...(DB.posTreino || [])].forEach(j => {
         const d = parseDateString(getVal(j, 'Data'));
@@ -435,7 +431,6 @@
         mSelect.innerHTML += `<option value="${m}">${monthNames[parseInt(month)-1]} ${year}</option>`;
       });
 
-      // Mapeia Tópicos Únicos da Coluna A da posTreinoConteudo
       let topicosSet = new Set();
       (DB.posTreinoConteudo || []).forEach(row => {
         const topico = getVal(row, 'TOPICOS') || getVal(row, 'TOPICO');
@@ -684,17 +679,28 @@
       const fTopico = document.getElementById('filter-topico').value;
       const fConteudo = document.getElementById('filter-conteudo').value;
 
-      // Mapeamento Data -> Nota da Sessão a partir da aba posTreino
-      let dateNotas = {};
       let posTreino = DB.posTreino || [];
 
+      // Mapeamento Data -> { nota, minutagem, focoPrincipal, topicoPrincipal }
+      let dateSessionInfo = {};
+
       posTreino.forEach(t => {
-        const dt = cleanString(getVal(t, 'Data'));
-        const nota = parseNum(getVal(t, 'Nota geral da sessao'));
-        if (dt) dateNotas[dt] = nota;
+        const dtClean = cleanString(getVal(t, 'Data'));
+        const nota = parseNum(getVal(t, 'Desempenho geral da sessao'));
+        const minutagem = parseNum(getVal(t, 'Minutagem preparatoria'));
+        const focoPrincipal = getVal(t, 'Conteudo Preparatoria');
+        const topicoPrincipal = getVal(t, 'Tipo de conteudo preparatoria');
+
+        if (dtClean) {
+          dateSessionInfo[dtClean] = {
+            nota: nota,
+            minutagem: minutagem,
+            focoPrincipal: focoPrincipal,
+            topicoPrincipal: topicoPrincipal
+          };
+        }
       });
 
-      // Mapeia datas em que cada Tópico e Conteúdo esteve ativo (com valor 1)
       let topicosStats = {}, conteudosStats = {};
       let datesWithSelectedContent = new Set();
       let hasContentFilter = (fTopico !== 'ALL' || fConteudo !== 'ALL');
@@ -705,19 +711,16 @@
 
         if (!topico || !conteudo) return;
 
-        // Filtro pelos seletores
         if (fTopico !== 'ALL' && cleanString(topico) !== cleanString(fTopico)) return;
         if (fConteudo !== 'ALL' && cleanString(conteudo) !== cleanString(fConteudo)) return;
 
-        // Percorre as colunas de datas da linha
         Object.keys(row).forEach(dateCol => {
           if (dateCol.includes('/')) {
             const val = parseNum(row[dateCol]);
             if (val === 1) {
               const cleanDate = cleanString(dateCol);
-              const notaSessao = dateNotas[cleanDate] || 0;
+              const info = dateSessionInfo[cleanDate] || { nota: 0, focoPrincipal: '', topicoPrincipal: '' };
 
-              // Filtro de Data Inicial e Final
               const dtParsed = parseDateString(dateCol);
               if (dtParsed) {
                 if (dStartVal && dtParsed < new Date(dStartVal + 'T00:00:00')) return;
@@ -726,21 +729,27 @@
 
               datesWithSelectedContent.add(cleanDate);
 
+              // Determina Peso 2 se for o Foco Principal do dia
+              const isFocoPrincipal = (cleanString(info.focoPrincipal) === cleanString(conteudo));
+              const peso = isFocoPrincipal ? 2 : 1;
+
               // Contagem Tópicos
-              if (!topicosStats[topico]) topicosStats[topico] = { count: 0, somaNota: 0 };
+              if (!topicosStats[topico]) topicosStats[topico] = { count: 0, somaWeightedNota: 0, somaPesos: 0 };
               topicosStats[topico].count += 1;
-              topicosStats[topico].somaNota += notaSessao;
+              topicosStats[topico].somaWeightedNota += (info.nota * peso);
+              topicosStats[topico].somaPesos += peso;
 
               // Contagem Conteúdos
-              if (!conteudosStats[conteudo]) conteudosStats[conteudo] = { count: 0, somaNota: 0 };
+              if (!conteudosStats[conteudo]) conteudosStats[conteudo] = { count: 0, somaWeightedNota: 0, somaPesos: 0 };
               conteudosStats[conteudo].count += 1;
-              conteudosStats[conteudo].somaNota += notaSessao;
+              conteudosStats[conteudo].somaWeightedNota += (info.nota * peso);
+              conteudosStats[conteudo].somaPesos += peso;
             }
           }
         });
       });
 
-      // Filtra a lista de sessões de treino principais
+      // Filtra treinos do topo (KPIs)
       let filteredTreinos = posTreino.filter(t => {
         const cleanDate = cleanString(getVal(t, 'Data'));
         const dtParsed = parseDateString(getVal(t, 'Data'));
@@ -757,23 +766,24 @@
       let somaNotas = 0, somaMin = 0;
 
       filteredTreinos.forEach(t => {
-        somaNotas += parseNum(getVal(t, 'Nota geral da sessao'));
-        somaMin += parseNum(getVal(t, 'Minutagem efetiva'));
+        somaNotas += parseNum(getVal(t, 'Desempenho geral da sessao'));
+        somaMin += parseNum(getVal(t, 'Minutagem preparatoria'));
       });
 
+      // Atualiza Cards KPIs do topo
       document.getElementById('kpi-treino-qtd').innerText = totalTreinos;
       document.getElementById('kpi-treino-nota-media').innerText = totalTreinos > 0 ? (somaNotas / totalTreinos).toFixed(1) : '0.0';
       document.getElementById('kpi-treino-min-total').innerText = somaMin + "'";
       document.getElementById('kpi-treino-min-media').innerText = totalTreinos > 0 ? Math.round(somaMin / totalTreinos) + "'" : "0'";
 
-      // Renderiza Gráfico de Tópicos
+      // Renderiza Tópicos
       let maxTop = Math.max(...Object.values(topicosStats).map(s => s.count), 1);
       const topChart = document.getElementById('chart-treino-topicos');
       topChart.innerHTML = '';
 
       Object.keys(topicosStats).forEach(top => {
         const count = topicosStats[top].count;
-        const media = count > 0 ? (topicosStats[top].somaNota / count).toFixed(1) : '0.0';
+        const media = topicosStats[top].somaPesos > 0 ? (topicosStats[top].somaWeightedNota / topicosStats[top].somaPesos).toFixed(1) : '0.0';
         const pct = Math.round((count / maxTop) * 100);
         topChart.innerHTML += `
           <div class="bar-row">
@@ -784,14 +794,14 @@
         `;
       });
 
-      // Renderiza Gráfico de Conteúdos
+      // Renderiza Conteúdos
       let maxCont = Math.max(...Object.values(conteudosStats).map(s => s.count), 1);
       const contChart = document.getElementById('chart-treino-conteudos');
       contChart.innerHTML = '';
 
       Object.keys(conteudosStats).forEach(c => {
         const count = conteudosStats[c].count;
-        const media = count > 0 ? (conteudosStats[c].somaNota / count).toFixed(1) : '0.0';
+        const media = conteudosStats[c].somaPesos > 0 ? (conteudosStats[c].somaWeightedNota / conteudosStats[c].somaPesos).toFixed(1) : '0.0';
         const pct = Math.round((count / maxCont) * 100);
         contChart.innerHTML += `
           <div class="bar-row">
