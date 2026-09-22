@@ -437,13 +437,19 @@
         mSelect.innerHTML += `<option value="${m}">${name}</option>`;
       });
 
+      // Lê os Tópicos cadastrados na aba posTreinoConteudo e nos registros de posTreino
       let topicosSet = new Set();
+      (DB.posTreinoConteudo || []).forEach(c => {
+        const top = getVal(c, 'Topico');
+        if (top && cleanString(top) !== 'nao aplicado') topicosSet.add(top);
+      });
       (DB.posTreino || []).forEach(t => {
         const topPrep = getVal(t, 'Tipo de conteudo preparatoria');
         const topConc = getVal(t, 'Tipo de conteudo conceitual');
         if (topPrep && cleanString(topPrep) !== 'nao aplicado') topicosSet.add(topPrep);
         if (topConc && cleanString(topConc) !== 'nao aplicado') topicosSet.add(topConc);
       });
+
       Array.from(topicosSet).sort().forEach(top => {
         if(top) tSelect.innerHTML += `<option value="${top}">${top}</option>`;
       });
@@ -457,6 +463,17 @@
       cSelect.innerHTML = '<option value="ALL">Todos os Conteúdos</option>';
 
       let conteudosSet = new Set();
+
+      // Busca na aba de cadastro posTreinoConteudo
+      (DB.posTreinoConteudo || []).forEach(c => {
+        const top = getVal(c, 'Topico');
+        const cont = getVal(c, 'Conteudo');
+        if ((topicoVal === 'ALL' || cleanString(top) === cleanString(topicoVal)) && cont && cleanString(cont) !== 'nao aplicado') {
+          conteudosSet.add(cont);
+        }
+      });
+
+      // Busca na aba posTreino
       (DB.posTreino || []).forEach(t => {
         const topPrep = getVal(t, 'Tipo de conteudo preparatoria');
         const topConc = getVal(t, 'Tipo de conteudo conceitual');
