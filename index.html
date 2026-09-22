@@ -68,7 +68,7 @@
     .bar-label { width: 180px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
     .bar-track { flex: 1; background: #e2e8f0; height: 14px; border-radius: 7px; overflow: hidden; margin: 0 10px; }
     .bar-fill { background: #15803d; height: 100%; border-radius: 7px; }
-    .bar-val { width: 65px; font-weight: 700; text-align: right; }
+    .bar-val { width: 130px; font-weight: 700; text-align: right; font-size: 0.72rem; }
 
     .col-chart-container { display: flex; align-items: flex-end; justify-content: space-around; height: 180px; padding-top: 20px; border-bottom: 2px solid var(--border-color); }
     .col-item { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 30%; }
@@ -240,11 +240,11 @@
 
       <div class="grid-2col">
         <div class="card">
-          <div class="card-header-bar">Frequência por Tópico Geral</div>
+          <div class="card-header-bar">Frequência e Nota Média por Tópico Geral</div>
           <div id="chart-treino-topicos"></div>
         </div>
         <div class="card">
-          <div class="card-header-bar">Frequência por Conteúdo Específico</div>
+          <div class="card-header-bar">Frequência e Nota Média por Conteúdo Específico</div>
           <div id="chart-treino-conteudos"></div>
         </div>
       </div>
@@ -325,11 +325,11 @@
       return null;
     }
 
-    function fetchCSV(url) {
+    function fetchCSV(url, isHeader = true) {
       return new Promise((resolve) => {
         Papa.parse(url, {
           download: true,
-          header: true,
+          header: isHeader,
           skipEmptyLines: true,
           complete: (res) => resolve(res.data || []),
           error: (err) => {
@@ -343,13 +343,13 @@
     async function initDashboard() {
       try {
         const results = await Promise.allSettled([
-          fetchCSV(URLS.posJogo),
-          fetchCSV(URLS.posJogoIndividual),
-          fetchCSV(URLS.baseJogadores),
-          fetchCSV(URLS.glossario),
-          fetchCSV(URLS.posTreino),
-          fetchCSV(URLS.posTreinoConteudo),
-          fetchCSV(URLS.posTreinoIndividual)
+          fetchCSV(URLS.posJogo, true),
+          fetchCSV(URLS.posJogoIndividual, true),
+          fetchCSV(URLS.baseJogadores, true),
+          fetchCSV(URLS.glossario, true),
+          fetchCSV(URLS.posTreino, true),
+          fetchCSV(URLS.posTreinoConteudo, false),
+          fetchCSV(URLS.posTreinoIndividual, true)
         ]);
 
         DB.posJogo = results[0].value || [];
@@ -357,9 +357,10 @@
         DB.baseJogadores = results[2].value || [];
         DB.glossario = results[3].value || [];
         DB.posTreino = results[4].value || [];
-        DB.posTreinoConteudo = results[5].value || [];
+        DB.posTreinoConteudoRaw = results[5].value || [];
         DB.posTreinoIndividual = results[6].value || [];
 
+        processPosTreinoConteudo();
         populateFilters();
         renderAbaJogos();
         renderAbaTreinos();
@@ -369,6 +370,31 @@
         document.getElementById('loader-msg').innerText = "Erro ao carregar dados do Google Sheets.";
         document.getElementById('loader-msg').style.color = "red";
       }
+    }
+
+    let MAPA_CONTEUDOS = {};
+    function processPosTreinoConteudo() {
+      MAPA_CONTEUDOS = {};
+      const matrix = DB.posTreinoConteudoRaw;
+      if (!matrix || matrix.length === 0) return;
+
+      const headers = matrix[0];
+      headers.forEach((h, colIndex) => {
+        const topicoName = (h || '').toString().trim();
+        const cleanTop = cleanString(topicoName);
+        if (cleanTop && cleanTop !== 'conteudo' && !cleanTop.includes('/') && !cleanTop.includes('data')) {
+          MAPA_CONTEUDOS[topicoName] = [];
+          for (let rowIndex = 1; rowIndex < matrix.length; rowIndex++) {
+            const row = matrix[rowIndex];
+            if (row && row[colIndex]) {
+              const contVal = row[colIndex].toString().trim();
+              if (contVal && cleanString(contVal) !== 'nao aplicado') {
+                MAPA_CONTEUDOS[topicoName].push(contVal);
+              }
+            }
+          }
+        }
+      });
     }
 
     function switchView(viewId, title, event) {
@@ -403,7 +429,6 @@
       mSelect.innerHTML = '<option value="ALL">Todos os Meses</option>';
       tSelect.innerHTML = '<option value="ALL">Todos os Tópicos</option>';
 
-      // Atletas
       let jogadoresSet = new Set();
       (DB.baseJogadores || []).forEach(j => {
         const n = toTitleCase(getVal(j, 'Nome'));
@@ -415,14 +440,12 @@
       });
       Array.from(jogadoresSet).sort().forEach(j => pSelect.innerHTML += `<option value="${j}">${j}</option>`);
 
-      // Adversários e Competições
       const advs = [...new Set((DB.posJogo || []).map(j => getVal(j, 'Adversario')))].filter(Boolean);
       advs.sort().forEach(a => aSelect.innerHTML += `<option value="${a}">${a}</option>`);
 
       const comps = [...new Set((DB.posJogo || []).map(j => getVal(j, 'Competicao')))].filter(Boolean);
       comps.sort().forEach(c => cSelect.innerHTML += `<option value="${c}">${c}</option>`);
 
-      // Meses
       let monthsSet = new Set();
       [...(DB.posJogo || []), ...(DB.posTreino || [])].forEach(j => {
         const d = parseDateString(getVal(j, 'Data'));
@@ -437,28 +460,8 @@
         mSelect.innerHTML += `<option value="${m}">${monthNames[parseInt(month)-1]} ${year}</option>`;
       });
 
-      // Pega Tópicos Reais dos Cabeçalhos da posTreinoConteudo (Filtrando lixo de datas ou colunas vazias)
-      let topicosSet = new Set();
-      if (DB.posTreinoConteudo.length > 0) {
-        const cols = Object.keys(DB.posTreinoConteudo[0]);
-        cols.forEach(col => {
-          const cleanCol = cleanString(col);
-          if (cleanCol && cleanCol !== 'conteudo' && !cleanCol.includes('/') && !cleanCol.includes('data')) {
-            topicosSet.add(col.trim());
-          }
-        });
-      }
-      
-      // Fallback para tópicos cadastrados direto nos treinos
-      (DB.posTreino || []).forEach(t => {
-        const topPrep = getVal(t, 'Tipo de conteudo preparatoria');
-        const topConc = getVal(t, 'Tipo de conteudo conceitual');
-        if (topPrep && cleanString(topPrep) !== 'nao aplicado') topicosSet.add(topPrep);
-        if (topConc && cleanString(topConc) !== 'nao aplicado') topicosSet.add(topConc);
-      });
-
-      Array.from(topicosSet).sort().forEach(top => {
-        if(top) tSelect.innerHTML += `<option value="${top}">${top}</option>`;
+      Object.keys(MAPA_CONTEUDOS).forEach(topico => {
+        tSelect.innerHTML += `<option value="${topico}">${topico}</option>`;
       });
 
       onTopicoChange();
@@ -472,20 +475,12 @@
       let conteudosSet = new Set();
 
       if (topicoVal === 'ALL') {
-        (DB.posTreinoConteudo || []).forEach(row => {
-          Object.keys(row).forEach(col => {
-            const cleanCol = cleanString(col);
-            if (cleanCol !== 'conteudo' && !cleanCol.includes('/') && row[col]) {
-              const val = row[col].trim();
-              if (val && cleanString(val) !== 'nao aplicado') conteudosSet.add(val);
-            }
-          });
+        Object.values(MAPA_CONTEUDOS).forEach(arr => {
+          arr.forEach(c => conteudosSet.add(c));
         });
       } else {
-        (DB.posTreinoConteudo || []).forEach(row => {
-          const val = getVal(row, topicoVal);
-          if (val && cleanString(val) !== 'nao aplicado') conteudosSet.add(val);
-        });
+        const arr = MAPA_CONTEUDOS[topicoVal] || [];
+        arr.forEach(c => conteudosSet.add(c));
       }
 
       Array.from(conteudosSet).sort().forEach(c => cSelect.innerHTML += `<option value="${c}">${c}</option>`);
@@ -754,41 +749,69 @@
       document.getElementById('kpi-treino-min-total').innerText = somaMin + "'";
       document.getElementById('kpi-treino-min-media').innerText = totalTreinos > 0 ? Math.round(somaMin / totalTreinos) + "'" : "0'";
 
-      let topicosCount = {}, conteudosCount = {};
+      // Mapeia Frequência E Nota Média para Tópicos e Conteúdos
+      let topicosStats = {}, conteudosStats = {};
       let maxTop = 1, maxCont = 1;
 
       posTreino.forEach(t => {
+        const notaSessao = parseNum(getVal(t, 'Nota geral da sessao'));
+
+        // Tópicos
         ['Tipo de conteudo preparatoria', 'Tipo de conteudo conceitual'].forEach(k => {
           const val = getVal(t, k);
           if (val && cleanString(val) !== 'nao aplicado') {
-            topicosCount[val] = (topicosCount[val] || 0) + 1;
-            if (topicosCount[val] > maxTop) maxTop = topicosCount[val];
+            if (!topicosStats[val]) topicosStats[val] = { count: 0, somaNota: 0 };
+            topicosStats[val].count += 1;
+            topicosStats[val].somaNota += notaSessao;
+            if (topicosStats[val].count > maxTop) maxTop = topicosStats[val].count;
           }
         });
 
+        // Conteúdos
         ['Conteudo Preparatoria', 'Conteudo Conceitual'].forEach(k => {
           const val = getVal(t, k);
           if (val && cleanString(val) !== 'nao aplicado') {
-            conteudosCount[val] = (conteudosCount[val] || 0) + 1;
-            if (conteudosCount[val] > maxCont) maxCont = conteudosCount[val];
+            if (!conteudosStats[val]) conteudosStats[val] = { count: 0, somaNota: 0 };
+            conteudosStats[val].count += 1;
+            conteudosStats[val].somaNota += notaSessao;
+            if (conteudosStats[val].count > maxCont) maxCont = conteudosStats[val].count;
           }
         });
       });
 
+      // Renderiza Gráfico de Tópicos (Vezes + Nota Média)
       const topChart = document.getElementById('chart-treino-topicos');
       topChart.innerHTML = '';
-      Object.keys(topicosCount).forEach(top => {
-        const pct = Math.round((topicosCount[top] / maxTop) * 100);
-        topChart.innerHTML += `<div class="bar-row"><div class="bar-label">${top}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><div class="bar-val">${topicosCount[top]}x</div></div>`;
+      Object.keys(topicosStats).forEach(top => {
+        const count = topicosStats[top].count;
+        const media = count > 0 ? (topicosStats[top].somaNota / count).toFixed(1) : '0.0';
+        const pct = Math.round((count / maxTop) * 100);
+        topChart.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label">${top}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+            <div class="bar-val">${count}x | Média: ${media} pts</div>
+          </div>
+        `;
       });
 
+      // Renderiza Gráfico de Conteúdos (Vezes + Nota Média)
       const contChart = document.getElementById('chart-treino-conteudos');
       contChart.innerHTML = '';
-      Object.keys(conteudosCount).forEach(c => {
-        const pct = Math.round((conteudosCount[c] / maxCont) * 100);
-        contChart.innerHTML += `<div class="bar-row"><div class="bar-label">${c}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><div class="bar-val">${conteudosCount[c]}x</div></div>`;
+      Object.keys(conteudosStats).forEach(c => {
+        const count = conteudosStats[c].count;
+        const media = count > 0 ? (conteudosStats[c].somaNota / count).toFixed(1) : '0.0';
+        const pct = Math.round((count / maxCont) * 100);
+        contChart.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label">${c}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+            <div class="bar-val">${count}x | Média: ${media} pts</div>
+          </div>
+        `;
       });
 
+      // Tabela de Desempenho Individual por Atleta
       const datesInFilteredTreinos = new Set(posTreino.map(t => cleanString(getVal(t, 'Data'))));
       const tbodyAtleta = document.querySelector('#table-treino-atletas tbody');
       tbodyAtleta.innerHTML = '';
@@ -813,7 +836,7 @@
 
       Object.keys(playerStats).sort().forEach(p => {
         const avg = (playerStats[p].sum / playerStats[p].count).toFixed(1);
-        tbodyAtleta.innerHTML += `<tr><td><b>${p}</b></td><td>${playerStats[p].count} sessões</td><td><b>${avg}</b></td></tr>`;
+        tbodyAtleta.innerHTML += `<tr><td><b>${p}</b></td><td>${playerStats[p].count} sessões</td><td><b>${avg} pts</b></td></tr>`;
       });
     }
 
