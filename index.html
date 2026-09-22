@@ -237,11 +237,14 @@
       pSelect.innerHTML = '<option value="ALL">Todos os Atletas</option>';
       mSelect.innerHTML = '<option value="ALL">Todos os Meses</option>';
 
-      // Extrai os Tópicos a partir do cabeçalho da aba posTreinoConteudo (desconsiderando a coluna 'Conteudo')
+      // Pega todos os Tópicos das colunas da aba posTreinoConteudo (ignorando a primeira coluna genérica se for 'Conteudo')
       if (DB.posTreinoConteudo.length > 0) {
-        const topicoCols = Object.keys(DB.posTreinoConteudo[0]).filter(k => cleanString(k) !== 'conteudo');
-        topicoCols.forEach(top => {
-          if (top.trim()) tSelect.innerHTML += `<option value="${top.trim()}">${top.trim()}</option>`;
+        const cols = Object.keys(DB.posTreinoConteudo[0]);
+        cols.forEach(col => {
+          const cClean = cleanString(col);
+          if (cClean !== 'conteudo' && cClean !== '') {
+            tSelect.innerHTML += `<option value="${col.trim()}">${col.trim()}</option>`;
+          }
         });
       }
 
@@ -279,19 +282,20 @@
       let conteudosSet = new Set();
 
       if (topicoVal === 'ALL') {
-        // Pega todos os conteúdos de todas as colunas de tópicos
+        // Percorre todas as colunas da aba posTreinoConteudo
         (DB.posTreinoConteudo || []).forEach(row => {
           Object.keys(row).forEach(col => {
-            if (cleanString(col) !== 'conteudo' && row[col] && cleanString(row[col]) !== 'nao aplicado') {
-              conteudosSet.add(row[col].trim());
+            const val = row[col];
+            if (val && cleanString(val) !== 'nao aplicado' && cleanString(val) !== '') {
+              conteudosSet.add(val.trim());
             }
           });
         });
       } else {
-        // Pega os conteúdos da coluna do Tópico selecionado
+        // Pega somente da coluna do Tópico selecionado
         (DB.posTreinoConteudo || []).forEach(row => {
           const val = getVal(row, topicoVal);
-          if (val && cleanString(val) !== 'nao aplicado') {
+          if (val && cleanString(val) !== 'nao aplicado' && cleanString(val) !== '') {
             conteudosSet.add(val.trim());
           }
         });
