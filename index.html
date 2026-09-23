@@ -60,24 +60,26 @@
     .sort-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
     .sort-btn.active, .sort-btn:hover { background: #ffffff; color: var(--green-header); }
 
-    .table-container { overflow-x: auto; max-height: 350px; }
+    /* Estilo Compacto das Tabelas / Listas de Frequência */
+    .compact-chart-container { max-height: 250px; overflow-y: auto; padding-right: 6px; }
+    .bar-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 0.72rem; }
+    .bar-label { width: 140px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
+    .bar-track { flex: 1; background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden; margin: 0 8px; }
+    .bar-fill { background: #15803d; height: 100%; border-radius: 5px; }
+    .bar-val { width: 120px; font-weight: 700; text-align: right; font-size: 0.7rem; }
+
+    .table-container { overflow-x: auto; max-height: 250px; }
     table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color); }
+    th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border-color); }
     th { background: #f8fafc; color: var(--green-header); font-weight: 700; position: sticky; top: 0; }
 
     .player-avatar { width: 100px; height: 100px; border-radius: 8px; border: 3px solid var(--green-primary); background: #e2e8f0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .player-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-    .bar-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.75rem; }
-    .bar-label { width: 180px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
-    .bar-track { flex: 1; background: #e2e8f0; height: 14px; border-radius: 7px; overflow: hidden; margin: 0 10px; }
-    .bar-fill { background: #15803d; height: 100%; border-radius: 7px; }
-    .bar-val { width: 145px; font-weight: 700; text-align: right; font-size: 0.72rem; }
-
-    .col-chart-container { display: flex; align-items: flex-end; justify-content: space-around; height: 180px; padding-top: 20px; border-bottom: 2px solid var(--border-color); }
-    .col-item { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 40%; }
-    .col-bar { width: 100%; background: var(--green-primary); border-radius: 4px 4px 0 0; transition: height 0.3s ease; display: flex; justify-content: center; align-items: flex-start; color: white; font-weight: 800; font-size: 0.85rem; padding-top: 4px; min-height: 24px; }
-    .col-label { font-size: 0.75rem; font-weight: 700; color: var(--text-main); }
+    .col-chart-container { display: flex; align-items: flex-end; justify-content: space-around; height: 160px; padding-top: 15px; border-bottom: 2px solid var(--border-color); }
+    .col-item { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 40%; }
+    .col-bar { width: 100%; background: var(--green-primary); border-radius: 4px 4px 0 0; transition: height 0.3s ease; display: flex; justify-content: center; align-items: flex-start; color: white; font-weight: 800; font-size: 0.8rem; padding-top: 4px; min-height: 22px; }
+    .col-label { font-size: 0.72rem; font-weight: 700; color: var(--text-main); }
 
     .dashboard-view { display: none; }
     .dashboard-view.active { display: block; }
@@ -184,7 +186,7 @@
       <div class="grid-2col">
         <div class="card">
           <div class="card-header-bar">% Minutagem por Jogador</div>
-          <div id="chart-minutagem-atleta"></div>
+          <div id="chart-minutagem-atleta" class="compact-chart-container"></div>
         </div>
         <div class="card">
           <div class="card-header-bar">Desempenho Individual nos Jogos</div>
@@ -260,7 +262,7 @@
               <button class="sort-btn" id="sort-top-nota" onclick="setSortTopico('nota')">Nota ↓</button>
             </div>
           </div>
-          <div id="chart-treino-topicos"></div>
+          <div id="chart-treino-topicos" class="compact-chart-container"></div>
         </div>
 
         <div class="card">
@@ -271,7 +273,7 @@
               <button class="sort-btn" id="sort-cont-nota" onclick="setSortConteudo('nota')">Nota ↓</button>
             </div>
           </div>
-          <div id="chart-treino-conteudos"></div>
+          <div id="chart-treino-conteudos" class="compact-chart-container"></div>
         </div>
       </div>
 
@@ -344,10 +346,23 @@
     }
 
     function parseNum(val) {
-      if (!val) return 0;
+      if (val === undefined || val === null || val === '') return 0;
       let clean = val.toString().replace(',', '.').replace(/[^0-9.]/g, '');
       let num = parseFloat(clean);
       return isNaN(num) ? 0 : num;
+    }
+
+    // Leitor Universal e Robusto de Minutagem Efetiva
+    function extractMinutagemEfetiva(row) {
+      if (!row) return 0;
+      for (let k of Object.keys(row)) {
+        const kClean = cleanString(k);
+        if (kClean.includes('minutagem') && kClean.includes('efetiva')) {
+          const val = parseNum(row[k]);
+          if (val > 0) return val;
+        }
+      }
+      return parseNum(getVal(row, 'Minutagem efetiva')) || parseNum(getVal(row, 'Minutagem preparatoria'));
     }
 
     function toTitleCase(str) {
@@ -749,14 +764,13 @@
 
       let posTreino = DB.posTreino || [];
 
-      // Mapeamento ChaveDataFormatada -> Info da Sessão
       let dateSessionInfo = {};
 
       posTreino.forEach(t => {
         const rawDate = getVal(t, 'Data');
         const dtKey = formatDateKey(rawDate);
         const nota = parseNum(getVal(t, 'Desempenho geral da sessao'));
-        const minEfetiva = parseNum(getVal(t, 'Minutagem efetiva'));
+        const minEfetiva = extractMinutagemEfetiva(t);
         const focoPrincipal = getVal(t, 'Conteudo Preparatoria');
         const dimensao = getVal(t, 'Dimensao do campo');
 
@@ -797,7 +811,6 @@
                 if (dEndVal && dtParsed > new Date(dEndVal + 'T23:59:59')) return;
               }
 
-              // Filtro por Dimensão do Campo no conteúdo
               if (fDimensao !== 'ALL' && !cleanString(info.dimensao).includes(cleanString(fDimensao))) return;
 
               datesWithSelectedContent.add(dtKey);
@@ -805,13 +818,11 @@
               const isFocoPrincipal = (cleanString(info.focoPrincipal) === cleanString(conteudo));
               const peso = isFocoPrincipal ? 2 : 1;
 
-              // Contagem Tópicos
               if (!topicosStats[topico]) topicosStats[topico] = { count: 0, somaWeightedNota: 0, somaPesos: 0 };
               topicosStats[topico].count += 1;
               topicosStats[topico].somaWeightedNota += (info.nota * peso);
               topicosStats[topico].somaPesos += peso;
 
-              // Contagem Conteúdos
               if (!conteudosStats[conteudo]) conteudosStats[conteudo] = { count: 0, somaWeightedNota: 0, somaPesos: 0 };
               conteudosStats[conteudo].count += 1;
               conteudosStats[conteudo].somaWeightedNota += (info.nota * peso);
@@ -821,7 +832,6 @@
         });
       });
 
-      // Filtra os treinos para o resumo superior (KPIs)
       let filteredTreinos = posTreino.filter(t => {
         const dtKey = formatDateKey(getVal(t, 'Data'));
         const dtParsed = parseDateString(getVal(t, 'Data'));
@@ -839,12 +849,11 @@
       let totalTreinos = filteredTreinos.length;
       let somaNotas = 0, somaMinEfetiva = 0;
 
-      // Cálculo para o gráfico de nota média por dimensão de campo
       let dimStats = { inteiro: { count: 0, soma: 0 }, metade: { count: 0, soma: 0 } };
 
       filteredTreinos.forEach(t => {
         const nota = parseNum(getVal(t, 'Desempenho geral da sessao'));
-        const minEfet = parseNum(getVal(t, 'Minutagem efetiva'));
+        const minEfet = extractMinutagemEfetiva(t);
         const dim = cleanString(getVal(t, 'Dimensao do campo'));
 
         somaNotas += nota;
@@ -859,13 +868,13 @@
         }
       });
 
-      // Atualiza Cards KPIs
+      // Atualiza os KPIs
       document.getElementById('kpi-treino-qtd').innerText = totalTreinos;
       document.getElementById('kpi-treino-nota-media').innerText = totalTreinos > 0 ? (somaNotas / totalTreinos).toFixed(1) : '0.0';
       document.getElementById('kpi-treino-min-total').innerText = somaMinEfetiva + "'";
       document.getElementById('kpi-treino-min-media').innerText = totalTreinos > 0 ? Math.round(somaMinEfetiva / totalTreinos) + "'" : "0'";
 
-      // Renderiza Gráfico Comparativo de Dimensão do Campo
+      // Gráfico da Dimensão do Campo
       const mediaInteiro = dimStats.inteiro.count > 0 ? (dimStats.inteiro.soma / dimStats.inteiro.count).toFixed(1) : '0.0';
       const mediaMetade = dimStats.metade.count > 0 ? (dimStats.metade.soma / dimStats.metade.count).toFixed(1) : '0.0';
 
@@ -878,7 +887,7 @@
       barMet.style.height = Math.round((parseFloat(mediaMetade) / 10) * 100) + '%';
       barMet.innerText = mediaMetade + ' pts';
 
-      // Ordenação de Tópicos
+      // Ordenação de Tópicos (Compacto)
       let sortedTopicos = Object.keys(topicosStats).map(top => {
         const count = topicosStats[top].count;
         const media = topicosStats[top].somaPesos > 0 ? parseFloat((topicosStats[top].somaWeightedNota / topicosStats[top].somaPesos).toFixed(1)) : 0;
@@ -899,14 +908,14 @@
         const pct = Math.round(((sortTopicoMode === 'freq' ? item.count : item.media) / maxTopVal) * 100);
         topChart.innerHTML += `
           <div class="bar-row">
-            <div class="bar-label">${item.name}</div>
+            <div class="bar-label" title="${item.name}">${item.name}</div>
             <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
-            <div class="bar-val">${item.count}x | Média: ${item.media.toFixed(1)} pts</div>
+            <div class="bar-val">${item.count}x | ${item.media.toFixed(1)} pts</div>
           </div>
         `;
       });
 
-      // Ordenação de Conteúdos
+      // Ordenação de Conteúdos (Compacto)
       let sortedConteudos = Object.keys(conteudosStats).map(c => {
         const count = conteudosStats[c].count;
         const media = conteudosStats[c].somaPesos > 0 ? parseFloat((conteudosStats[c].somaWeightedNota / conteudosStats[c].somaPesos).toFixed(1)) : 0;
@@ -927,14 +936,14 @@
         const pct = Math.round(((sortConteudoMode === 'freq' ? item.count : item.media) / maxContVal) * 100);
         contChart.innerHTML += `
           <div class="bar-row">
-            <div class="bar-label">${item.name}</div>
+            <div class="bar-label" title="${item.name}">${item.name}</div>
             <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
-            <div class="bar-val">${item.count}x | Média: ${item.media.toFixed(1)} pts</div>
+            <div class="bar-val">${item.count}x | ${item.media.toFixed(1)} pts</div>
           </div>
         `;
       });
 
-      // Mapeia Datas Válidas dos Treinos Filtrados
+      // Tabela Atletas em Treino
       const filteredDatesSet = new Set(filteredTreinos.map(t => formatDateKey(getVal(t, 'Data'))));
       const tbodyAtleta = document.querySelector('#table-treino-atletas tbody');
       tbodyAtleta.innerHTML = '';
