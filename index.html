@@ -75,8 +75,8 @@
     .bar-val { width: 145px; font-weight: 700; text-align: right; font-size: 0.72rem; }
 
     .col-chart-container { display: flex; align-items: flex-end; justify-content: space-around; height: 180px; padding-top: 20px; border-bottom: 2px solid var(--border-color); }
-    .col-item { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 30%; }
-    .col-bar { width: 100%; background: var(--green-primary); border-radius: 4px 4px 0 0; transition: height 0.3s ease; display: flex; justify-content: center; align-items: flex-start; color: white; font-weight: 800; font-size: 0.75rem; padding-top: 4px; min-height: 20px; }
+    .col-item { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 40%; }
+    .col-bar { width: 100%; background: var(--green-primary); border-radius: 4px 4px 0 0; transition: height 0.3s ease; display: flex; justify-content: center; align-items: flex-start; color: white; font-weight: 800; font-size: 0.85rem; padding-top: 4px; min-height: 24px; }
     .col-label { font-size: 0.75rem; font-weight: 700; color: var(--text-main); }
 
     .dashboard-view { display: none; }
@@ -129,6 +129,15 @@
       <div class="filter-group filter-jogos-only">
         <label>Competição</label>
         <select id="filter-comp" onchange="applyFilters()"><option value="ALL">Todas as Competições</option></select>
+      </div>
+
+      <div class="filter-group filter-treinos-only" style="display:none;">
+        <label>Dimensão do Campo</label>
+        <select id="filter-dimensao" onchange="applyFilters()">
+          <option value="ALL">Todas as Dimensões</option>
+          <option value="inteiro">Campo Inteiro</option>
+          <option value="metade">Metade do Campo</option>
+        </select>
       </div>
 
       <div class="filter-group">
@@ -253,6 +262,7 @@
           </div>
           <div id="chart-treino-topicos"></div>
         </div>
+
         <div class="card">
           <div class="card-header-bar">
             <span>Frequência e Nota Média por Conteúdo Específico</span>
@@ -265,19 +275,35 @@
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-header-bar">Desempenho Individual por Atleta nos Treinos</div>
-        <div class="table-container">
-          <table id="table-treino-atletas">
-            <thead>
-              <tr>
-                <th>Atleta</th>
-                <th>Presenças em Treino</th>
-                <th>Nota Média Individual</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header-bar">Nota Média da Sessão por Dimensão do Campo</div>
+          <div class="col-chart-container" id="chart-dimensao-campo">
+            <div class="col-item">
+              <div class="col-bar" id="bar-dim-inteiro" style="height:0%;">0.0</div>
+              <div class="col-label">Campo Inteiro</div>
+            </div>
+            <div class="col-item">
+              <div class="col-bar" id="bar-dim-metade" style="height:0%;">0.0</div>
+              <div class="col-label">Metade do Campo</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header-bar">Desempenho Individual por Atleta nos Treinos</div>
+          <div class="table-container">
+            <table id="table-treino-atletas">
+              <thead>
+                <tr>
+                  <th>Atleta</th>
+                  <th>Presenças em Treino</th>
+                  <th>Nota Média Individual</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -315,20 +341,6 @@
       
       const looseMatch = rowKeys.find(rk => cleanString(rk).includes(targetClean));
       return looseMatch && row[looseMatch] !== undefined ? row[looseMatch].toString().trim() : '';
-    }
-
-    // Busca Minutagem Dinamicamente em qualquer coluna de treino
-    function getMinutagemEfetiva(row) {
-      if (!row) return 0;
-      for (let k of Object.keys(row)) {
-        const kClean = cleanString(k);
-        if (kClean.includes('minutagem') && kClean.includes('efetiva')) {
-          const val = parseNum(row[k]);
-          if (val > 0) return val;
-        }
-      }
-      // Fallback
-      return parseNum(getVal(row, 'Minutagem efetiva')) || parseNum(getVal(row, 'Minutagem preparatoria'));
     }
 
     function parseNum(val) {
@@ -373,7 +385,7 @@
           header: true,
           skipEmptyLines: true,
           complete: (res) => resolve(res.data || []),
-          error: (err) => resolve([])
+          error: () => resolve([])
         });
       });
     }
@@ -733,6 +745,7 @@
       const fPlayer = document.getElementById('filter-player').value;
       const fTopico = document.getElementById('filter-topico').value;
       const fConteudo = document.getElementById('filter-conteudo').value;
+      const fDimensao = document.getElementById('filter-dimensao').value;
 
       let posTreino = DB.posTreino || [];
 
@@ -743,14 +756,16 @@
         const rawDate = getVal(t, 'Data');
         const dtKey = formatDateKey(rawDate);
         const nota = parseNum(getVal(t, 'Desempenho geral da sessao'));
-        const minEfetiva = getMinutagemEfetiva(t);
+        const minEfetiva = parseNum(getVal(t, 'Minutagem efetiva'));
         const focoPrincipal = getVal(t, 'Conteudo Preparatoria');
+        const dimensao = getVal(t, 'Dimensao do campo');
 
         if (dtKey) {
           dateSessionInfo[dtKey] = {
             nota: nota,
             minutagemEfetiva: minEfetiva,
             focoPrincipal: focoPrincipal,
+            dimensao: dimensao,
             rawDate: rawDate
           };
         }
@@ -774,13 +789,16 @@
             const val = parseNum(row[dateCol]);
             if (val === 1) {
               const dtKey = formatDateKey(dateCol);
-              const info = dateSessionInfo[dtKey] || { nota: 0, focoPrincipal: '' };
+              const info = dateSessionInfo[dtKey] || { nota: 0, focoPrincipal: '', dimensao: '' };
 
               const dtParsed = parseDateString(dateCol);
               if (dtParsed) {
                 if (dStartVal && dtParsed < new Date(dStartVal + 'T00:00:00')) return;
                 if (dEndVal && dtParsed > new Date(dEndVal + 'T23:59:59')) return;
               }
+
+              // Filtro por Dimensão do Campo no conteúdo
+              if (fDimensao !== 'ALL' && !cleanString(info.dimensao).includes(cleanString(fDimensao))) return;
 
               datesWithSelectedContent.add(dtKey);
 
@@ -811,6 +829,8 @@
         if (dStartVal && dtParsed && dtParsed < new Date(dStartVal + 'T00:00:00')) return false;
         if (dEndVal && dtParsed && dtParsed > new Date(dEndVal + 'T23:59:59')) return false;
 
+        if (fDimensao !== 'ALL' && !cleanString(getVal(t, 'Dimensao do campo')).includes(cleanString(fDimensao))) return false;
+
         if (hasContentFilter && !datesWithSelectedContent.has(dtKey)) return false;
 
         return true;
@@ -819,9 +839,24 @@
       let totalTreinos = filteredTreinos.length;
       let somaNotas = 0, somaMinEfetiva = 0;
 
+      // Cálculo para o gráfico de nota média por dimensão de campo
+      let dimStats = { inteiro: { count: 0, soma: 0 }, metade: { count: 0, soma: 0 } };
+
       filteredTreinos.forEach(t => {
-        somaNotas += parseNum(getVal(t, 'Desempenho geral da sessao'));
-        somaMinEfetiva += getMinutagemEfetiva(t);
+        const nota = parseNum(getVal(t, 'Desempenho geral da sessao'));
+        const minEfet = parseNum(getVal(t, 'Minutagem efetiva'));
+        const dim = cleanString(getVal(t, 'Dimensao do campo'));
+
+        somaNotas += nota;
+        somaMinEfetiva += minEfet;
+
+        if (dim.includes('inteiro')) {
+          dimStats.inteiro.count += 1;
+          dimStats.inteiro.soma += nota;
+        } else if (dim.includes('metade')) {
+          dimStats.metade.count += 1;
+          dimStats.metade.soma += nota;
+        }
       });
 
       // Atualiza Cards KPIs
@@ -829,6 +864,19 @@
       document.getElementById('kpi-treino-nota-media').innerText = totalTreinos > 0 ? (somaNotas / totalTreinos).toFixed(1) : '0.0';
       document.getElementById('kpi-treino-min-total').innerText = somaMinEfetiva + "'";
       document.getElementById('kpi-treino-min-media').innerText = totalTreinos > 0 ? Math.round(somaMinEfetiva / totalTreinos) + "'" : "0'";
+
+      // Renderiza Gráfico Comparativo de Dimensão do Campo
+      const mediaInteiro = dimStats.inteiro.count > 0 ? (dimStats.inteiro.soma / dimStats.inteiro.count).toFixed(1) : '0.0';
+      const mediaMetade = dimStats.metade.count > 0 ? (dimStats.metade.soma / dimStats.metade.count).toFixed(1) : '0.0';
+
+      const barInt = document.getElementById('bar-dim-inteiro');
+      const barMet = document.getElementById('bar-dim-metade');
+
+      barInt.style.height = Math.round((parseFloat(mediaInteiro) / 10) * 100) + '%';
+      barInt.innerText = mediaInteiro + ' pts';
+
+      barMet.style.height = Math.round((parseFloat(mediaMetade) / 10) * 100) + '%';
+      barMet.innerText = mediaMetade + ' pts';
 
       // Ordenação de Tópicos
       let sortedTopicos = Object.keys(topicosStats).map(top => {
@@ -901,7 +949,6 @@
           if (dateCol.includes('/')) {
             const dtKey = formatDateKey(dateCol);
             
-            // Só contabiliza se a data estiver dentro dos treinos válidos e o atleta tiver nota > 0
             if (filteredDatesSet.has(dtKey)) {
               const notaVal = parseNum(row[dateCol]);
               if (notaVal > 0) {
@@ -914,7 +961,6 @@
         });
       });
 
-      // Ordena por Presença (Maior para Menor) e renderiza na tabela
       Object.keys(playerStats).sort((a,b) => playerStats[b].count - playerStats[a].count).forEach(p => {
         const avg = (playerStats[p].sum / playerStats[p].count).toFixed(1);
         tbodyAtleta.innerHTML += `<tr><td><b>${p}</b></td><td>${playerStats[p].count} sessões</td><td><b>${avg} pts</b></td></tr>`;
