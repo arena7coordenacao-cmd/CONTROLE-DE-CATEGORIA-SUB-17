@@ -313,9 +313,22 @@
       const matchKey = rowKeys.find(rk => cleanString(rk) === targetClean);
       if (matchKey && row[matchKey] !== undefined) return row[matchKey].toString().trim();
       
-      // Fallback para nomes parecidos (ex: quebras de linha no cabeçalho)
       const looseMatch = rowKeys.find(rk => cleanString(rk).includes(targetClean));
       return looseMatch && row[looseMatch] !== undefined ? row[looseMatch].toString().trim() : '';
+    }
+
+    // Busca Minutagem Dinamicamente em qualquer coluna de treino
+    function getMinutagemEfetiva(row) {
+      if (!row) return 0;
+      for (let k of Object.keys(row)) {
+        const kClean = cleanString(k);
+        if (kClean.includes('minutagem') && kClean.includes('efetiva')) {
+          const val = parseNum(row[k]);
+          if (val > 0) return val;
+        }
+      }
+      // Fallback
+      return parseNum(getVal(row, 'Minutagem efetiva')) || parseNum(getVal(row, 'Minutagem preparatoria'));
     }
 
     function parseNum(val) {
@@ -335,7 +348,7 @@
 
     function parseDateString(str) {
       if (!str) return null;
-      let cleanStr = str.trim();
+      let cleanStr = str.toString().replace(/[\r\n]+/g, '').trim();
       const parts = cleanStr.split('/');
       if (parts.length === 3) {
         let day = parseInt(parts[0], 10);
@@ -345,6 +358,12 @@
         return new Date(year, month, day);
       }
       return null;
+    }
+
+    function formatDateKey(str) {
+      const d = parseDateString(str);
+      if (!d) return cleanString(str);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
     function fetchCSV(url) {
@@ -717,25 +736,22 @@
 
       let posTreino = DB.posTreino || [];
 
-      // Mapeamento Data -> { nota, minutagemEfetiva, focoPrincipal }
+      // Mapeamento ChaveDataFormatada -> Info da Sessão
       let dateSessionInfo = {};
 
       posTreino.forEach(t => {
-        const dtClean = cleanString(getVal(t, 'Data'));
+        const rawDate = getVal(t, 'Data');
+        const dtKey = formatDateKey(rawDate);
         const nota = parseNum(getVal(t, 'Desempenho geral da sessao'));
-        
-        // Busca da Minutagem Efetiva com Fallback por vários nomes possíveis
-        let minutagemEfetiva = parseNum(getVal(t, 'Minutagem efetiva'));
-        if (minutagemEfetiva === 0) minutagemEfetiva = parseNum(getVal(t, 'Minutagem Efetiva'));
-        if (minutagemEfetiva === 0) minutagemEfetiva = parseNum(getVal(t, 'Minutagem preparatoria'));
-
+        const minEfetiva = getMinutagemEfetiva(t);
         const focoPrincipal = getVal(t, 'Conteudo Preparatoria');
 
-        if (dtClean) {
-          dateSessionInfo[dtClean] = {
+        if (dtKey) {
+          dateSessionInfo[dtKey] = {
             nota: nota,
-            minutagemEfetiva: minutagemEfetiva,
-            focoPrincipal: focoPrincipal
+            minutagemEfetiva: minEfetiva,
+            focoPrincipal: focoPrincipal,
+            rawDate: rawDate
           };
         }
       });
@@ -757,8 +773,8 @@
           if (dateCol.includes('/')) {
             const val = parseNum(row[dateCol]);
             if (val === 1) {
-              const cleanDate = cleanString(dateCol);
-              const info = dateSessionInfo[cleanDate] || { nota: 0, focoPrincipal: '' };
+              const dtKey = formatDateKey(dateCol);
+              const info = dateSessionInfo[dtKey] || { nota: 0, focoPrincipal: '' };
 
               const dtParsed = parseDateString(dateCol);
               if (dtParsed) {
@@ -766,7 +782,7 @@
                 if (dEndVal && dtParsed > new Date(dEndVal + 'T23:59:59')) return;
               }
 
-              datesWithSelectedContent.add(cleanDate);
+              datesWithSelectedContent.add(dtKey);
 
               const isFocoPrincipal = (cleanString(info.focoPrincipal) === cleanString(conteudo));
               const peso = isFocoPrincipal ? 2 : 1;
@@ -787,15 +803,15 @@
         });
       });
 
-      // Filtra treinos para os KPIs do topo
+      // Filtra os treinos para o resumo superior (KPIs)
       let filteredTreinos = posTreino.filter(t => {
-        const cleanDate = cleanString(getVal(t, 'Data'));
+        const dtKey = formatDateKey(getVal(t, 'Data'));
         const dtParsed = parseDateString(getVal(t, 'Data'));
 
         if (dStartVal && dtParsed && dtParsed < new Date(dStartVal + 'T00:00:00')) return false;
         if (dEndVal && dtParsed && dtParsed > new Date(dEndVal + 'T23:59:59')) return false;
 
-        if (hasContentFilter && !datesWithSelectedContent.has(cleanDate)) return false;
+        if (hasContentFilter && !datesWithSelectedContent.has(dtKey)) return false;
 
         return true;
       });
@@ -805,15 +821,10 @@
 
       filteredTreinos.forEach(t => {
         somaNotas += parseNum(getVal(t, 'Desempenho geral da sessao'));
-
-        let minEf = parseNum(getVal(t, 'Minutagem efetiva'));
-        if (minEf === 0) minEf = parseNum(getVal(t, 'Minutagem Efetiva'));
-        if (minEf === 0) minEf = parseNum(getVal(t, 'Minutagem preparatoria'));
-
-        somaMinEfetiva += minEf;
+        somaMinEfetiva += getMinutagemEfetiva(t);
       });
 
-      // Atualiza Cards KPIs do topo
+      // Atualiza Cards KPIs
       document.getElementById('kpi-treino-qtd').innerText = totalTreinos;
       document.getElementById('kpi-treino-nota-media').innerText = totalTreinos > 0 ? (somaNotas / totalTreinos).toFixed(1) : '0.0';
       document.getElementById('kpi-treino-min-total').innerText = somaMinEfetiva + "'";
@@ -875,8 +886,8 @@
         `;
       });
 
-      // Tabela de Atletas
-      const datesInFilteredTreinos = new Set(filteredTreinos.map(t => cleanString(getVal(t, 'Data'))));
+      // Mapeia Datas Válidas dos Treinos Filtrados
+      const filteredDatesSet = new Set(filteredTreinos.map(t => formatDateKey(getVal(t, 'Data'))));
       const tbodyAtleta = document.querySelector('#table-treino-atletas tbody');
       tbodyAtleta.innerHTML = '';
 
@@ -887,17 +898,23 @@
         if (!nome || (fPlayer !== 'ALL' && cleanString(fPlayer) !== cleanString(nome))) return;
 
         Object.keys(row).forEach(dateCol => {
-          if (datesInFilteredTreinos.has(cleanString(dateCol))) {
-            const notaVal = parseNum(row[dateCol]);
-            if (notaVal > 0) {
-              if (!playerStats[nome]) playerStats[nome] = { count: 0, sum: 0 };
-              playerStats[nome].count += 1;
-              playerStats[nome].sum += notaVal;
+          if (dateCol.includes('/')) {
+            const dtKey = formatDateKey(dateCol);
+            
+            // Só contabiliza se a data estiver dentro dos treinos válidos e o atleta tiver nota > 0
+            if (filteredDatesSet.has(dtKey)) {
+              const notaVal = parseNum(row[dateCol]);
+              if (notaVal > 0) {
+                if (!playerStats[nome]) playerStats[nome] = { count: 0, sum: 0 };
+                playerStats[nome].count += 1;
+                playerStats[nome].sum += notaVal;
+              }
             }
           }
         });
       });
 
+      // Ordena por Presença (Maior para Menor) e renderiza na tabela
       Object.keys(playerStats).sort((a,b) => playerStats[b].count - playerStats[a].count).forEach(p => {
         const avg = (playerStats[p].sum / playerStats[p].count).toFixed(1);
         tbodyAtleta.innerHTML += `<tr><td><b>${p}</b></td><td>${playerStats[p].count} sessões</td><td><b>${avg} pts</b></td></tr>`;
