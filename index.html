@@ -60,7 +60,6 @@
     .sort-btn { background: rgba(255,255,255,0.2); border: none; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
     .sort-btn.active, .sort-btn:hover { background: #ffffff; color: var(--green-header); }
 
-    /* Estilo Compacto das Tabelas / Listas de Frequência */
     .compact-chart-container { max-height: 250px; overflow-y: auto; padding-right: 6px; }
     .bar-row { display: flex; align-items: center; margin-bottom: 6px; font-size: 0.72rem; }
     .bar-label { width: 140px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
@@ -256,7 +255,7 @@
       <div class="grid-2col">
         <div class="card">
           <div class="card-header-bar">
-            <span>Frequência e Nota Média por Tópico Geral</span>
+            <span id="title-topicos">Frequência e Nota Média por Tópico Geral</span>
             <div class="sort-btn-group">
               <button class="sort-btn active" id="sort-top-freq" onclick="setSortTopico('freq')">Frequência ↓</button>
               <button class="sort-btn" id="sort-top-nota" onclick="setSortTopico('nota')">Nota ↓</button>
@@ -267,7 +266,7 @@
 
         <div class="card">
           <div class="card-header-bar">
-            <span>Frequência e Nota Média por Conteúdo Específico</span>
+            <span id="title-conteudos">Frequência e Nota Média por Conteúdo Específico</span>
             <div class="sort-btn-group">
               <button class="sort-btn active" id="sort-cont-freq" onclick="setSortConteudo('freq')">Frequência ↓</button>
               <button class="sort-btn" id="sort-cont-nota" onclick="setSortConteudo('nota')">Nota ↓</button>
@@ -352,7 +351,6 @@
       return isNaN(num) ? 0 : num;
     }
 
-    // Leitor Universal e Robusto de Minutagem Efetiva
     function extractMinutagemEfetiva(row) {
       if (!row) return 0;
       for (let k of Object.keys(row)) {
@@ -753,7 +751,7 @@
       }
     }
 
-    // 2. LÓGICA ABA TREINOS
+    // 2. LÓGICA ABA TREINOS (Com Filtro do Atleta Totalmente Cruzado)
     function renderAbaTreinos() {
       const dStartVal = document.getElementById('filter-date-start').value;
       const dEndVal = document.getElementById('filter-date-end').value;
@@ -763,20 +761,42 @@
       const fDimensao = document.getElementById('filter-dimensao').value;
 
       let posTreino = DB.posTreino || [];
+      let playerFiltered = (fPlayer !== 'ALL');
+      let playerDatesSet = new Set();
+      let playerRatingsMap = {}; // Guarda a nota individual do atleta por data
 
+      // Se um atleta for selecionado, busca as datas e notas individuais dele
+      if (playerFiltered) {
+        const targetClean = cleanString(fPlayer);
+        (DB.posTreinoIndividual || []).forEach(row => {
+          if (cleanString(getVal(row, 'Nome')) === targetClean) {
+            Object.keys(row).forEach(dateCol => {
+              if (dateCol.includes('/')) {
+                const notaVal = parseNum(row[dateCol]);
+                if (notaVal > 0) {
+                  const dtKey = formatDateKey(dateCol);
+                  playerDatesSet.add(dtKey);
+                  playerRatingsMap[dtKey] = notaVal;
+                }
+              }
+            });
+          }
+        });
+      }
+
+      // Mapeia Sessões Gerais por Data
       let dateSessionInfo = {};
-
       posTreino.forEach(t => {
         const rawDate = getVal(t, 'Data');
         const dtKey = formatDateKey(rawDate);
-        const nota = parseNum(getVal(t, 'Desempenho geral da sessao'));
+        const notaSessao = parseNum(getVal(t, 'Desempenho geral da sessao'));
         const minEfetiva = extractMinutagemEfetiva(t);
         const focoPrincipal = getVal(t, 'Conteudo Preparatoria');
         const dimensao = getVal(t, 'Dimensao do campo');
 
         if (dtKey) {
           dateSessionInfo[dtKey] = {
-            nota: nota,
+            notaSessao: notaSessao,
             minutagemEfetiva: minEfetiva,
             focoPrincipal: focoPrincipal,
             dimensao: dimensao,
@@ -803,7 +823,11 @@
             const val = parseNum(row[dateCol]);
             if (val === 1) {
               const dtKey = formatDateKey(dateCol);
-              const info = dateSessionInfo[dtKey] || { nota: 0, focoPrincipal: '', dimensao: '' };
+              
+              // Se o atleta for filtrado, verifica se ele participou neste dia
+              if (playerFiltered && !playerDatesSet.has(dtKey)) return;
+
+              const info = dateSessionInfo[dtKey] || { notaSessao: 0, focoPrincipal: '', dimensao: '' };
 
               const dtParsed = parseDateString(dateCol);
               if (dtParsed) {
@@ -815,23 +839,27 @@
 
               datesWithSelectedContent.add(dtKey);
 
+              // Usa a Nota Individual do atleta se houver filtro, senão usa a nota da sessão
+              const notaParaCalculo = playerFiltered ? (playerRatingsMap[dtKey] || info.notaSessao) : info.notaSessao;
+
               const isFocoPrincipal = (cleanString(info.focoPrincipal) === cleanString(conteudo));
               const peso = isFocoPrincipal ? 2 : 1;
 
               if (!topicosStats[topico]) topicosStats[topico] = { count: 0, somaWeightedNota: 0, somaPesos: 0 };
               topicosStats[topico].count += 1;
-              topicosStats[topico].somaWeightedNota += (info.nota * peso);
+              topicosStats[topico].somaWeightedNota += (notaParaCalculo * peso);
               topicosStats[topico].somaPesos += peso;
 
               if (!conteudosStats[conteudo]) conteudosStats[conteudo] = { count: 0, somaWeightedNota: 0, somaPesos: 0 };
               conteudosStats[conteudo].count += 1;
-              conteudosStats[conteudo].somaWeightedNota += (info.nota * peso);
+              conteudosStats[conteudo].somaWeightedNota += (notaParaCalculo * peso);
               conteudosStats[conteudo].somaPesos += peso;
             }
           }
         });
       });
 
+      // Filtra os Treinos Considerados
       let filteredTreinos = posTreino.filter(t => {
         const dtKey = formatDateKey(getVal(t, 'Data'));
         const dtParsed = parseDateString(getVal(t, 'Data'));
@@ -840,6 +868,9 @@
         if (dEndVal && dtParsed && dtParsed > new Date(dEndVal + 'T23:59:59')) return false;
 
         if (fDimensao !== 'ALL' && !cleanString(getVal(t, 'Dimensao do campo')).includes(cleanString(fDimensao))) return false;
+
+        // Se filtrar por atleta, descarta treinos em que ele não participou
+        if (playerFiltered && !playerDatesSet.has(dtKey)) return false;
 
         if (hasContentFilter && !datesWithSelectedContent.has(dtKey)) return false;
 
@@ -852,29 +883,33 @@
       let dimStats = { inteiro: { count: 0, soma: 0 }, metade: { count: 0, soma: 0 } };
 
       filteredTreinos.forEach(t => {
-        const nota = parseNum(getVal(t, 'Desempenho geral da sessao'));
+        const dtKey = formatDateKey(getVal(t, 'Data'));
+        const notaGeral = parseNum(getVal(t, 'Desempenho geral da sessao'));
         const minEfet = extractMinutagemEfetiva(t);
         const dim = cleanString(getVal(t, 'Dimensao do campo'));
 
-        somaNotas += nota;
+        // Usa a nota do atleta no treino se filtrado
+        const notaUsada = playerFiltered ? (playerRatingsMap[dtKey] || notaGeral) : notaGeral;
+
+        somaNotas += notaUsada;
         somaMinEfetiva += minEfet;
 
         if (dim.includes('inteiro')) {
           dimStats.inteiro.count += 1;
-          dimStats.inteiro.soma += nota;
+          dimStats.inteiro.soma += notaUsada;
         } else if (dim.includes('metade')) {
           dimStats.metade.count += 1;
-          dimStats.metade.soma += nota;
+          dimStats.metade.soma += notaUsada;
         }
       });
 
-      // Atualiza os KPIs
+      // Atualiza os Cards Superiores
       document.getElementById('kpi-treino-qtd').innerText = totalTreinos;
       document.getElementById('kpi-treino-nota-media').innerText = totalTreinos > 0 ? (somaNotas / totalTreinos).toFixed(1) : '0.0';
       document.getElementById('kpi-treino-min-total').innerText = somaMinEfetiva + "'";
       document.getElementById('kpi-treino-min-media').innerText = totalTreinos > 0 ? Math.round(somaMinEfetiva / totalTreinos) + "'" : "0'";
 
-      // Gráfico da Dimensão do Campo
+      // Gráfico de Dimensão
       const mediaInteiro = dimStats.inteiro.count > 0 ? (dimStats.inteiro.soma / dimStats.inteiro.count).toFixed(1) : '0.0';
       const mediaMetade = dimStats.metade.count > 0 ? (dimStats.metade.soma / dimStats.metade.count).toFixed(1) : '0.0';
 
@@ -887,7 +922,11 @@
       barMet.style.height = Math.round((parseFloat(mediaMetade) / 10) * 100) + '%';
       barMet.innerText = mediaMetade + ' pts';
 
-      // Ordenação de Tópicos (Compacto)
+      // Titulo dos Gráficos
+      document.getElementById('title-topicos').innerText = playerFiltered ? `Tópicos Trabalhados com ${toTitleCase(fPlayer)}` : `Frequência e Nota Média por Tópico Geral`;
+      document.getElementById('title-conteudos').innerText = playerFiltered ? `Conteúdos Trabalhados com ${toTitleCase(fPlayer)}` : `Frequência e Nota Média por Conteúdo Específico`;
+
+      // Renderiza Tópicos
       let sortedTopicos = Object.keys(topicosStats).map(top => {
         const count = topicosStats[top].count;
         const media = topicosStats[top].somaPesos > 0 ? parseFloat((topicosStats[top].somaWeightedNota / topicosStats[top].somaPesos).toFixed(1)) : 0;
@@ -915,7 +954,7 @@
         `;
       });
 
-      // Ordenação de Conteúdos (Compacto)
+      // Renderiza Conteúdos
       let sortedConteudos = Object.keys(conteudosStats).map(c => {
         const count = conteudosStats[c].count;
         const media = conteudosStats[c].somaPesos > 0 ? parseFloat((conteudosStats[c].somaWeightedNota / conteudosStats[c].somaPesos).toFixed(1)) : 0;
@@ -943,7 +982,7 @@
         `;
       });
 
-      // Tabela Atletas em Treino
+      // Tabela de Desempenho dos Atletas nos Treinos
       const filteredDatesSet = new Set(filteredTreinos.map(t => formatDateKey(getVal(t, 'Data'))));
       const tbodyAtleta = document.querySelector('#table-treino-atletas tbody');
       tbodyAtleta.innerHTML = '';
@@ -952,7 +991,7 @@
 
       (DB.posTreinoIndividual || []).forEach(row => {
         const nome = getVal(row, 'Nome');
-        if (!nome || (fPlayer !== 'ALL' && cleanString(fPlayer) !== cleanString(nome))) return;
+        if (!nome || (playerFiltered && cleanString(fPlayer) !== cleanString(nome))) return;
 
         Object.keys(row).forEach(dateCol => {
           if (dateCol.includes('/')) {
