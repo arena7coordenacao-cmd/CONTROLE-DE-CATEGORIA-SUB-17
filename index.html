@@ -303,7 +303,7 @@
     let sortConteudoMode = 'freq';
 
     function cleanString(str) {
-      return (str || '').toString().trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return (str || '').toString().replace(/[\r\n]+/g, ' ').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     }
 
     function getVal(row, key) {
@@ -311,7 +311,11 @@
       const rowKeys = Object.keys(row);
       const targetClean = cleanString(key);
       const matchKey = rowKeys.find(rk => cleanString(rk) === targetClean);
-      return matchKey && row[matchKey] !== undefined ? row[matchKey].toString().trim() : '';
+      if (matchKey && row[matchKey] !== undefined) return row[matchKey].toString().trim();
+      
+      // Fallback para nomes parecidos (ex: quebras de linha no cabeçalho)
+      const looseMatch = rowKeys.find(rk => cleanString(rk).includes(targetClean));
+      return looseMatch && row[looseMatch] !== undefined ? row[looseMatch].toString().trim() : '';
     }
 
     function parseNum(val) {
@@ -719,7 +723,12 @@
       posTreino.forEach(t => {
         const dtClean = cleanString(getVal(t, 'Data'));
         const nota = parseNum(getVal(t, 'Desempenho geral da sessao'));
-        const minutagemEfetiva = parseNum(getVal(t, 'Minutagem efetiva'));
+        
+        // Busca da Minutagem Efetiva com Fallback por vários nomes possíveis
+        let minutagemEfetiva = parseNum(getVal(t, 'Minutagem efetiva'));
+        if (minutagemEfetiva === 0) minutagemEfetiva = parseNum(getVal(t, 'Minutagem Efetiva'));
+        if (minutagemEfetiva === 0) minutagemEfetiva = parseNum(getVal(t, 'Minutagem preparatoria'));
+
         const focoPrincipal = getVal(t, 'Conteudo Preparatoria');
 
         if (dtClean) {
@@ -796,10 +805,15 @@
 
       filteredTreinos.forEach(t => {
         somaNotas += parseNum(getVal(t, 'Desempenho geral da sessao'));
-        somaMinEfetiva += parseNum(getVal(t, 'Minutagem efetiva'));
+
+        let minEf = parseNum(getVal(t, 'Minutagem efetiva'));
+        if (minEf === 0) minEf = parseNum(getVal(t, 'Minutagem Efetiva'));
+        if (minEf === 0) minEf = parseNum(getVal(t, 'Minutagem preparatoria'));
+
+        somaMinEfetiva += minEf;
       });
 
-      // Atualiza Cards
+      // Atualiza Cards KPIs do topo
       document.getElementById('kpi-treino-qtd').innerText = totalTreinos;
       document.getElementById('kpi-treino-nota-media').innerText = totalTreinos > 0 ? (somaNotas / totalTreinos).toFixed(1) : '0.0';
       document.getElementById('kpi-treino-min-total').innerText = somaMinEfetiva + "'";
@@ -861,7 +875,7 @@
         `;
       });
 
-      // Tabela de Atletas (Ordenada por Sessões do maior para o menor)
+      // Tabela de Atletas
       const datesInFilteredTreinos = new Set(filteredTreinos.map(t => cleanString(getVal(t, 'Data'))));
       const tbodyAtleta = document.querySelector('#table-treino-atletas tbody');
       tbodyAtleta.innerHTML = '';
