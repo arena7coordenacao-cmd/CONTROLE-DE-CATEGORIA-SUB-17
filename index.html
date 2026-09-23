@@ -110,7 +110,6 @@
     <div class="nav-item active" onclick="switchView('aba-jogos', 'JOGOS', event)">📊 Jogos</div>
     <div class="nav-item" onclick="switchView('aba-treino', 'TREINOS', event)">📋 Treinos</div>
     <div class="nav-item" onclick="switchView('aba-atleta', 'CARTÃO DO ATLETA', event)">👤 Cartão do Atleta</div>
-    <div class="nav-item" onclick="switchView('aba-conteudos', 'MAPA DE CONTEÚDOS', event)">🗺️ Mapa de Conteúdos</div>
   </sidebar>
 
   <main>
@@ -451,8 +450,6 @@
         </div>
       </div>
     </div>
-
-    <div id="aba-conteudos" class="dashboard-view"><div class="card"><div class="card-header-bar">Aba em ajuste</div></div></div>
   </main>
 
   <script>
@@ -705,7 +702,6 @@
       else if (currentView === 'aba-atleta') renderAbaAtleta();
     }
 
-    // Função Auxiliar de Filtro em Jogos
     function matchGameFilters(j, rInd = null) {
       const dStartVal = document.getElementById('filter-date-start').value;
       const dEndVal = document.getElementById('filter-date-end').value;
@@ -1159,7 +1155,7 @@
       });
     }
 
-    // 3. LÓGICA DA ABA CARTÃO DO ATLETA (COM TODOS OS FILTROS)
+    // 3. LÓGICA DA ABA CARTÃO DO ATLETA
     function renderAbaAtleta() {
       const fPlayer = document.getElementById('filter-player').value;
       const targetClean = cleanString(fPlayer);
@@ -1187,16 +1183,25 @@
         return;
       }
 
-      // Busca dados cadastrais com leitura ampla da Perna Dominante
+      // Busca abrangente do perfil do atleta na aba baseJogadores
       const ath = (DB.baseJogadores || []).find(j => cleanString(getVal(j, 'Nome')) === targetClean);
       document.getElementById('card-nome').innerText = toTitleCase(fPlayer);
 
       if (ath) {
         document.getElementById('card-posicao').innerText = getVal(ath, 'Posição') || getVal(ath, 'Posicao') || '-';
-        
-        const pernaVal = getVal(ath, 'Perna dominante') || getVal(ath, 'Perna Dominante') || getVal(ath, 'Perna') || getVal(ath, 'Dominancia') || '-';
-        document.getElementById('card-perna').innerText = pernaVal;
 
+        // Busca Perna Dominante varrendo todas as chaves do objeto para garantir que não falhe por acentuação/espaço
+        let pernaFound = '-';
+        for (let k of Object.keys(ath)) {
+          const kClean = cleanString(k);
+          if (kClean.includes('perna') || kClean.includes('dominan') || kClean.includes('preferid')) {
+            if (ath[k] && ath[k].toString().trim() !== '') {
+              pernaFound = ath[k].toString().trim();
+              break;
+            }
+          }
+        }
+        document.getElementById('card-perna').innerText = pernaFound;
         document.getElementById('card-nasc').innerText = getVal(ath, 'Data Nasc') || getVal(ath, 'Nascimento') || '-';
 
         const fotoUrl = getVal(ath, 'Link foto');
@@ -1329,12 +1334,10 @@
             if (val === 1) {
               const dtKey = formatDateKey(dateCol);
               if (dateRatings[dtKey] !== undefined) {
-                // Tópicos
                 if (!topicosStats[topico]) topicosStats[topico] = { sum: 0, count: 0 };
                 topicosStats[topico].sum += dateRatings[dtKey];
                 topicosStats[topico].count += 1;
 
-                // Conteúdos
                 if (!conteudosStats[conteudo]) conteudosStats[conteudo] = { sum: 0, count: 0 };
                 conteudosStats[conteudo].sum += dateRatings[dtKey];
                 conteudosStats[conteudo].count += 1;
@@ -1344,7 +1347,6 @@
         });
       });
 
-      // Renderiza Tópicos
       const cardChartTop = document.getElementById('card-chart-topicos');
       cardChartTop.innerHTML = '';
 
@@ -1361,7 +1363,6 @@
         `;
       });
 
-      // Renderiza Conteúdos
       const cardChartCont = document.getElementById('card-chart-conteudos');
       cardChartCont.innerHTML = '';
 
