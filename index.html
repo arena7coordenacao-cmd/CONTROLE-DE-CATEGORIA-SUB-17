@@ -41,10 +41,9 @@
     .page-title { font-size: 1.3rem; font-weight: 800; text-transform: uppercase; }
     .status-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; background: #dcfce7; color: #166534; font-weight: 700; }
 
-    /* Layout da Barra de Filtros Redimensionado */
     .filter-bar {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 12px;
       background: var(--bg-card);
       padding: 16px;
@@ -55,7 +54,6 @@
     }
 
     .filter-group { display: flex; flex-direction: column; gap: 4px; }
-    .filter-group.span-2 { grid-column: span 2; }
     
     .filter-group label {
       font-size: 0.65rem;
@@ -152,14 +150,15 @@
     </header>
 
     <div class="filter-bar">
-      <!-- Linha 1 de Filtros (Jogos/Gerais) -->
-      <div class="filter-group">
-        <label>Atleta</label>
+      <!-- Filtro de Atleta (Invisível na Aba Jogos Geral, Visível no Atleta) -->
+      <div class="filter-group filter-atleta-only" style="display:none;">
+        <label>Atleta Selecionado</label>
         <select id="filter-player" onchange="applyFilters()"><option value="ALL">Todos os Atletas</option></select>
       </div>
 
+      <!-- Filtros Temporais (Comuns) -->
       <div class="filter-group">
-        <label>Selecione o Mês</label>
+        <label>Mês</label>
         <select id="filter-month" onchange="onMonthChange()"><option value="ALL">Todos os Meses</option></select>
       </div>
       <div class="filter-group">
@@ -171,23 +170,32 @@
         <input type="date" id="filter-date-end" onchange="applyFilters()">
       </div>
       
-      <div class="filter-group filter-jogos-all">
-        <label>Adversário</label>
-        <select id="filter-adv" onchange="applyFilters()"><option value="ALL">Todos os Adversários</option></select>
-      </div>
-      <div class="filter-group filter-jogos-all">
+      <!-- Filtros Exclusivos da Aba JOGOS -->
+      <div class="filter-group filter-jogos-group">
         <label>Competição</label>
         <select id="filter-comp" onchange="applyFilters()"><option value="ALL">Todas as Competições</option></select>
       </div>
-      <div class="filter-group filter-jogos-all">
-        <label>Local (Casa/Fora)</label>
+      <div class="filter-group filter-jogos-group">
+        <label>Adversário</label>
+        <select id="filter-adv" onchange="applyFilters()"><option value="ALL">Todos os Adversários</option></select>
+      </div>
+      <div class="filter-group filter-jogos-group">
+        <label>Cat. Adversário</label>
+        <select id="filter-cat-adv" onchange="applyFilters()"><option value="ALL">Todas as Categorias</option></select>
+      </div>
+      <div class="filter-group filter-jogos-group">
+        <label>Plataforma / Esquema</label>
+        <select id="filter-plataforma" onchange="applyFilters()"><option value="ALL">Todas as Plataformas</option></select>
+      </div>
+      <div class="filter-group filter-jogos-group">
+        <label>Mando (Casa/Fora)</label>
         <select id="filter-local" onchange="applyFilters()">
           <option value="ALL">Todos os Locais</option>
-          <option value="casa">Mando de Campo (Casa)</option>
-          <option value="fora">Fora de Casa</option>
+          <option value="casa">Casa</option>
+          <option value="fora">Fora</option>
         </select>
       </div>
-      <div class="filter-group filter-jogos-all">
+      <div class="filter-group filter-jogos-group">
         <label>Período do Dia</label>
         <select id="filter-periodo-dia" onchange="applyFilters()">
           <option value="ALL">Todos os Períodos</option>
@@ -196,7 +204,7 @@
           <option value="noite">Noite</option>
         </select>
       </div>
-      <div class="filter-group filter-jogos-all">
+      <div class="filter-group filter-jogos-group">
         <label>Ranking Adv.</label>
         <select id="filter-ranking" onchange="applyFilters()">
           <option value="ALL">Todos os Níveis</option>
@@ -206,7 +214,8 @@
         </select>
       </div>
 
-      <div class="filter-group filter-jogos-all">
+      <!-- Filtro de Titularidade (Visível apenas no Cartão do Atleta) -->
+      <div class="filter-group filter-atleta-only" style="display:none;">
         <label>Titularidade</label>
         <select id="filter-titularidade" onchange="applyFilters()">
           <option value="ALL">Todos os Status</option>
@@ -217,8 +226,8 @@
         </select>
       </div>
 
-      <!-- Linha 2 de Filtros (Treinos) com span maior para não empilhar textos longos -->
-      <div class="filter-group filter-treinos-all span-2">
+      <!-- Filtros Exclusivos da Aba TREINOS -->
+      <div class="filter-group filter-treinos-group" style="display:none;">
         <label>Dimensão do Campo</label>
         <select id="filter-dimensao" onchange="applyFilters()">
           <option value="ALL">Todas as Dimensões</option>
@@ -226,11 +235,11 @@
           <option value="metade">Metade do Campo</option>
         </select>
       </div>
-      <div class="filter-group filter-treinos-all span-2">
+      <div class="filter-group filter-treinos-group" style="display:none;">
         <label>Tópico Geral</label>
         <select id="filter-topico" onchange="onTopicoChange()"><option value="ALL">Todos os Tópicos</option></select>
       </div>
-      <div class="filter-group filter-treinos-all span-2">
+      <div class="filter-group filter-treinos-group" style="display:none;">
         <label>Conteúdo Específico</label>
         <select id="filter-conteudo" onchange="applyFilters()"><option value="ALL">Todos os Conteúdos</option></select>
       </div>
@@ -254,7 +263,7 @@
             <div class="kpi-card"><div class="kpi-lbl">Nº de Jogos</div><div class="kpi-val" id="kpi-jogos">0</div></div>
             <div class="kpi-card"><div class="kpi-lbl">% Vitórias</div><div class="kpi-val" id="kpi-pct-vitorias">0%</div></div>
             <div class="kpi-card"><div class="kpi-lbl">Minutagem Em Campo</div><div class="kpi-val" id="kpi-minutagem">0'</div></div>
-            <div class="kpi-card"><div class="kpi-lbl" id="lbl-gols-atleta">Gols do Atleta</div><div class="kpi-val" id="kpi-gols-atleta">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl" id="lbl-gols-atleta">Gols Feitos (Equipe)</div><div class="kpi-val" id="kpi-gols-atleta">0</div></div>
             <div class="kpi-card"><div class="kpi-lbl">Gols Pró (Equipe)</div><div class="kpi-val" id="kpi-gols-pro">0</div></div>
             <div class="kpi-card"><div class="kpi-lbl">Gols Sofridos em Campo</div><div class="kpi-val" id="kpi-gols-contra">0</div></div>
             <div class="kpi-card"><div class="kpi-lbl">Assistências</div><div class="kpi-val" id="kpi-ass">0</div></div>
@@ -595,9 +604,7 @@
         DB.posTreinoIndividual = results[6].value || [];
 
         populateFilters();
-        renderAbaJogos();
-        renderAbaTreinos();
-        renderAbaAtleta();
+        switchView('aba-jogos', 'JOGOS');
         document.getElementById('loader').style.display = 'none';
       } catch (err) {
         console.error("Erro na inicialização:", err);
@@ -614,11 +621,25 @@
       document.getElementById('view-title').innerText = title;
       if (event && event.target) event.target.classList.add('active');
 
-      if (viewId === 'aba-treino') {
-        renderAbaTreinos();
-      } else if (viewId === 'aba-jogos') {
+      // Visibilidade Dinâmica de Filtros Conforme a Aba
+      const jogosFilters = document.querySelectorAll('.filter-jogos-group');
+      const treinosFilters = document.querySelectorAll('.filter-treinos-group');
+      const atletaFilters = document.querySelectorAll('.filter-atleta-only');
+
+      if (viewId === 'aba-jogos') {
+        jogosFilters.forEach(f => f.style.display = 'flex');
+        treinosFilters.forEach(f => f.style.display = 'none');
+        atletaFilters.forEach(f => f.style.display = 'none');
         renderAbaJogos();
+      } else if (viewId === 'aba-treino') {
+        jogosFilters.forEach(f => f.style.display = 'none');
+        treinosFilters.forEach(f => f.style.display = 'flex');
+        atletaFilters.forEach(f => f.style.display = 'none');
+        renderAbaTreinos();
       } else if (viewId === 'aba-atleta') {
+        jogosFilters.forEach(f => f.style.display = 'flex');
+        treinosFilters.forEach(f => f.style.display = 'flex');
+        atletaFilters.forEach(f => f.style.display = 'flex');
         renderAbaAtleta();
       }
     }
@@ -641,21 +662,21 @@
       const pSelect = document.getElementById('filter-player');
       const aSelect = document.getElementById('filter-adv');
       const cSelect = document.getElementById('filter-comp');
+      const catAdvSelect = document.getElementById('filter-cat-adv');
+      const platSelect = document.getElementById('filter-plataforma');
       const mSelect = document.getElementById('filter-month');
       const tSelect = document.getElementById('filter-topico');
 
       pSelect.innerHTML = '<option value="ALL">Todos os Atletas</option>';
       aSelect.innerHTML = '<option value="ALL">Todos os Adversários</option>';
       cSelect.innerHTML = '<option value="ALL">Todas as Competições</option>';
+      catAdvSelect.innerHTML = '<option value="ALL">Todas as Categorias</option>';
+      platSelect.innerHTML = '<option value="ALL">Todas as Plataformas</option>';
       mSelect.innerHTML = '<option value="ALL">Todos os Meses</option>';
       tSelect.innerHTML = '<option value="ALL">Todos os Tópicos</option>';
 
       let jogadoresSet = new Set();
       (DB.baseJogadores || []).forEach(j => {
-        const n = toTitleCase(getVal(j, 'Nome'));
-        if (n) jogadoresSet.add(n);
-      });
-      (DB.posTreinoIndividual || []).forEach(j => {
         const n = toTitleCase(getVal(j, 'Nome'));
         if (n) jogadoresSet.add(n);
       });
@@ -666,6 +687,12 @@
 
       const comps = [...new Set((DB.posJogo || []).map(j => getVal(j, 'Competicao')))].filter(Boolean);
       comps.sort().forEach(c => cSelect.innerHTML += `<option value="${c}">${c}</option>`);
+
+      const cats = [...new Set((DB.posJogo || []).map(j => getVal(j, 'Categoria do adversario') || getVal(j, 'Categoria Adv')))].filter(Boolean);
+      cats.sort().forEach(cat => catAdvSelect.innerHTML += `<option value="${cat}">${cat}</option>`);
+
+      const plats = [...new Set((DB.posJogo || []).map(j => getVal(j, 'Plataforma de jogo') || getVal(j, 'Esquema tatico')))].filter(Boolean);
+      plats.sort().forEach(p => platSelect.innerHTML += `<option value="${p}">${p}</option>`);
 
       let monthsSet = new Set();
       [...(DB.posJogo || []), ...(DB.posTreino || [])].forEach(j => {
@@ -739,6 +766,8 @@
       const dEndVal = document.getElementById('filter-date-end').value;
       const fAdv = document.getElementById('filter-adv').value;
       const fComp = document.getElementById('filter-comp').value;
+      const fCatAdv = document.getElementById('filter-cat-adv').value;
+      const fPlataforma = document.getElementById('filter-plataforma').value;
       const fLocal = document.getElementById('filter-local').value;
       const fPeriodo = document.getElementById('filter-periodo-dia').value;
       const fRanking = document.getElementById('filter-ranking').value;
@@ -750,6 +779,16 @@
 
       if (fAdv !== 'ALL' && cleanString(getVal(j, 'Adversario')) !== cleanString(fAdv)) return false;
       if (fComp !== 'ALL' && cleanString(getVal(j, 'Competicao')) !== cleanString(fComp)) return false;
+
+      if (fCatAdv !== 'ALL') {
+        const catVal = cleanString(getVal(j, 'Categoria do adversario') || getVal(j, 'Categoria Adv'));
+        if (catVal !== cleanString(fCatAdv)) return false;
+      }
+
+      if (fPlataforma !== 'ALL') {
+        const platVal = cleanString(getVal(j, 'Plataforma de jogo') || getVal(j, 'Esquema tatico'));
+        if (platVal !== cleanString(fPlataforma)) return false;
+      }
 
       if (fLocal !== 'ALL') {
         const localVal = cleanString(getVal(j, 'Mando') || getVal(j, 'Local'));
@@ -777,41 +816,11 @@
 
     // 1. LÓGICA ABA JOGOS
     function renderAbaJogos() {
-      const fPlayer = document.getElementById('filter-player').value;
-
-      let posJogo = DB.posJogo || [];
+      let posJogo = (DB.posJogo || []).filter(j => matchGameFilters(j));
       let posJogoInd = DB.posJogoIndividual || [];
 
-      posJogo = posJogo.filter(j => matchGameFilters(j));
-
-      let athleteFiltered = (fPlayer !== 'ALL');
-      let athleteGamesSet = new Set();
-
-      if (athleteFiltered) {
-        const targetClean = cleanString(fPlayer);
-        
-        posJogoInd = posJogoInd.filter(r => {
-          const nomeReg = cleanString(getVal(r, 'Nome'));
-          const min = parseNum(getVal(r, 'Minutagem'));
-          return nomeReg === targetClean && min > 0;
-        });
-
-        posJogoInd.forEach(r => {
-          const nJogo = getVal(r, 'No Jogo');
-          const dt = getVal(r, 'Data');
-          if (nJogo) athleteGamesSet.add(nJogo);
-          if (dt) athleteGamesSet.add(dt);
-        });
-
-        posJogo = posJogo.filter(j => {
-          const nJogo = getVal(j, 'No Jogo');
-          const dt = getVal(j, 'Data');
-          return athleteGamesSet.has(nJogo) || athleteGamesSet.has(dt);
-        });
-      }
-
       let totalJogos = posJogo.length;
-      let vit = 0, der = 0, totalMin = 0, totalGolsAtleta = 0, totalGolsPro = 0, totalGolsContra = 0, totalAss = 0;
+      let vit = 0, der = 0, totalMin = 0, totalGolsPro = 0, totalGolsContra = 0, totalAss = 0;
       let rankingCount = { A: 0, B: 0, C: 0 };
       let capitaesCount = {};
 
@@ -828,25 +837,17 @@
 
         const cap = getVal(j, 'Capitao');
         if (cap) capitaesCount[cap] = (capitaesCount[cap] || 0) + 1;
-      });
 
-      if (athleteFiltered) {
-        posJogoInd.forEach(r => {
-          totalMin += parseNum(getVal(r, 'Minutagem'));
-          totalGolsAtleta += parseNum(getVal(r, 'Gols feitos'));
-          totalAss += parseNum(getVal(r, 'Assistencias'));
-        });
-      } else {
-        posJogo.forEach(j => totalMin += parseNum(getVal(j, 'Minutagem')));
-      }
+        totalMin += parseNum(getVal(j, 'Minutagem'));
+      });
 
       const pctVit = totalJogos > 0 ? Math.round((vit / totalJogos) * 100) : 0;
 
       document.getElementById('kpi-jogos').innerText = totalJogos;
       document.getElementById('kpi-pct-vitorias').innerText = pctVit + '%';
       document.getElementById('kpi-minutagem').innerText = totalMin + "'";
-      document.getElementById('kpi-gols-atleta').innerText = athleteFiltered ? totalGolsAtleta : totalGolsPro;
-      document.getElementById('lbl-gols-atleta').innerText = athleteFiltered ? "Gols do Atleta" : "Gols Feitos (Equipe)";
+      document.getElementById('kpi-gols-atleta').innerText = totalGolsPro;
+      document.getElementById('lbl-gols-atleta').innerText = "Gols Feitos (Equipe)";
       document.getElementById('kpi-gols-pro').innerText = totalGolsPro;
       document.getElementById('kpi-gols-contra').innerText = totalGolsContra;
       document.getElementById('kpi-ass').innerText = totalAss;
@@ -877,9 +878,7 @@
       let stats = {};
       let maxMin = 1;
 
-      const baseInd = athleteFiltered ? DB.posJogoIndividual.filter(r => cleanString(getVal(r, 'Nome')) === cleanString(fPlayer)) : DB.posJogoIndividual;
-
-      baseInd.forEach(r => {
+      posJogoInd.forEach(r => {
         const rawNome = getVal(r, 'Nome');
         const nome = toTitleCase(rawNome);
         if (!nome || cleanString(getVal(r, 'Titularidade')).includes('nao-relacionado')) return;
@@ -918,56 +917,20 @@
         </tr>`;
       });
 
-      const ath = (DB.baseJogadores || []).find(j => cleanString(getVal(j, 'Nome')) === cleanString(fPlayer));
-      if (ath && athleteFiltered) {
-        document.getElementById('jogos-nome-atleta').innerText = toTitleCase(fPlayer);
-        const fotoUrl = getVal(ath, 'Link foto');
-        if (fotoUrl && fotoUrl.startsWith('http')) {
-          document.getElementById('jogos-foto').src = fotoUrl;
-          document.getElementById('jogos-foto').style.display = 'block';
-          document.getElementById('jogos-silhueta').style.display = 'none';
-        } else {
-          document.getElementById('jogos-foto').style.display = 'none';
-          document.getElementById('jogos-silhueta').style.display = 'block';
-        }
-      } else {
-        document.getElementById('jogos-nome-atleta').innerText = "TODOS OS ATLETAS";
-        document.getElementById('jogos-foto').style.display = 'none';
-        document.getElementById('jogos-silhueta').style.display = 'block';
-      }
+      document.getElementById('jogos-nome-atleta').innerText = "TODOS OS ATLETAS";
+      document.getElementById('jogos-foto').style.display = 'none';
+      document.getElementById('jogos-silhueta').style.display = 'block';
     }
 
     // 2. LÓGICA ABA TREINOS
     function renderAbaTreinos() {
       const dStartVal = document.getElementById('filter-date-start').value;
       const dEndVal = document.getElementById('filter-date-end').value;
-      const fPlayer = document.getElementById('filter-player').value;
       const fTopico = document.getElementById('filter-topico').value;
       const fConteudo = document.getElementById('filter-conteudo').value;
       const fDimensao = document.getElementById('filter-dimensao').value;
 
       let posTreino = DB.posTreino || [];
-      let playerFiltered = (fPlayer !== 'ALL');
-      let playerDatesSet = new Set();
-      let playerRatingsMap = {};
-
-      if (playerFiltered) {
-        const targetClean = cleanString(fPlayer);
-        (DB.posTreinoIndividual || []).forEach(row => {
-          if (cleanString(getVal(row, 'Nome')) === targetClean) {
-            Object.keys(row).forEach(dateCol => {
-              if (dateCol.includes('/')) {
-                const notaVal = parseNum(row[dateCol]);
-                if (notaVal > 0) {
-                  const dtKey = formatDateKey(dateCol);
-                  playerDatesSet.add(dtKey);
-                  playerRatingsMap[dtKey] = notaVal;
-                }
-              }
-            });
-          }
-        });
-      }
 
       let dateSessionInfo = {};
       posTreino.forEach(t => {
@@ -1007,9 +970,6 @@
             const val = parseNum(row[dateCol]);
             if (val === 1) {
               const dtKey = formatDateKey(dateCol);
-              
-              if (playerFiltered && !playerDatesSet.has(dtKey)) return;
-
               const info = dateSessionInfo[dtKey] || { notaSessao: 0, focoPrincipal: '', dimensao: '' };
 
               const dtParsed = parseDateString(dateCol);
@@ -1022,7 +982,7 @@
 
               datesWithSelectedContent.add(dtKey);
 
-              const notaParaCalculo = playerFiltered ? (playerRatingsMap[dtKey] || info.notaSessao) : info.notaSessao;
+              const notaParaCalculo = info.notaSessao;
               const isFocoPrincipal = (cleanString(info.focoPrincipal) === cleanString(conteudo));
               const peso = isFocoPrincipal ? 2 : 1;
 
@@ -1049,8 +1009,6 @@
 
         if (fDimensao !== 'ALL' && !cleanString(getVal(t, 'Dimensao do campo')).includes(cleanString(fDimensao))) return false;
 
-        if (playerFiltered && !playerDatesSet.has(dtKey)) return false;
-
         if (hasContentFilter && !datesWithSelectedContent.has(dtKey)) return false;
 
         return true;
@@ -1062,22 +1020,19 @@
       let dimStats = { inteiro: { count: 0, soma: 0 }, metade: { count: 0, soma: 0 } };
 
       filteredTreinos.forEach(t => {
-        const dtKey = formatDateKey(getVal(t, 'Data'));
         const notaGeral = parseNum(getVal(t, 'Desempenho geral da sessao'));
         const minEfet = extractMinutagemEfetiva(t);
         const dim = cleanString(getVal(t, 'Dimensao do campo'));
 
-        const notaUsada = playerFiltered ? (playerRatingsMap[dtKey] || notaGeral) : notaGeral;
-
-        somaNotas += notaUsada;
+        somaNotas += notaGeral;
         somaMinEfetiva += minEfet;
 
         if (dim.includes('inteiro')) {
           dimStats.inteiro.count += 1;
-          dimStats.inteiro.soma += notaUsada;
+          dimStats.inteiro.soma += notaGeral;
         } else if (dim.includes('metade')) {
           dimStats.metade.count += 1;
-          dimStats.metade.soma += notaUsada;
+          dimStats.metade.soma += notaGeral;
         }
       });
 
@@ -1097,9 +1052,6 @@
 
       barMet.style.height = Math.round((parseFloat(mediaMetade) / 10) * 100) + '%';
       barMet.innerText = mediaMetade + ' pts';
-
-      document.getElementById('title-topicos').innerText = playerFiltered ? `Tópicos Trabalhados com ${toTitleCase(fPlayer)}` : `Frequência e Nota Média por Tópico Geral`;
-      document.getElementById('title-conteudos').innerText = playerFiltered ? `Conteúdos Trabalhados com ${toTitleCase(fPlayer)}` : `Frequência e Nota Média por Conteúdo Específico`;
 
       let sortedTopicos = Object.keys(topicosStats).map(top => {
         const count = topicosStats[top].count;
@@ -1163,7 +1115,7 @@
 
       (DB.posTreinoIndividual || []).forEach(row => {
         const nome = getVal(row, 'Nome');
-        if (!nome || (playerFiltered && cleanString(fPlayer) !== cleanString(nome))) return;
+        if (!nome) return;
 
         Object.keys(row).forEach(dateCol => {
           if (dateCol.includes('/')) {
