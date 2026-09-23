@@ -42,9 +42,9 @@
     .status-badge { font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; background: #dcfce7; color: #166534; font-weight: 700; }
 
     .filter-bar { display: flex; gap: 10px; background: var(--bg-card); padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; box-shadow: var(--shadow); flex-wrap: wrap; align-items: flex-end; }
-    .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 120px; }
-    .filter-group label { font-size: 0.65rem; font-weight: 800; color: var(--green-header); text-transform: uppercase; }
-    .filter-group select, .filter-group input { padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.8rem; background: #fff; }
+    .filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 110px; }
+    .filter-group label { font-size: 0.62rem; font-weight: 800; color: var(--green-header); text-transform: uppercase; }
+    .filter-group select, .filter-group input { padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 0.78rem; background: #fff; }
 
     .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 16px; }
     .kpi-card { background: var(--bg-card); padding: 10px; border-radius: 6px; box-shadow: var(--shadow); text-align: center; border-top: 3px solid var(--green-primary); }
@@ -72,7 +72,6 @@
     th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border-color); }
     th { background: #f8fafc; color: var(--green-header); font-weight: 700; position: sticky; top: 0; }
 
-    /* Estilos do Cartão do Atleta */
     .profile-header-card { display: flex; gap: 20px; background: var(--bg-card); padding: 20px; border-radius: 8px; box-shadow: var(--shadow); margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
     .profile-avatar-box { width: 130px; height: 130px; border-radius: 12px; border: 4px solid var(--green-primary); background: #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .profile-avatar-box img { width: 100%; height: 100%; object-fit: cover; }
@@ -121,6 +120,12 @@
     </header>
 
     <div class="filter-bar">
+      <!-- Filtro Principal -->
+      <div class="filter-group">
+        <label>Atleta</label>
+        <select id="filter-player" onchange="applyFilters()"><option value="ALL">Todos os Atletas</option></select>
+      </div>
+
       <div class="filter-group">
         <label>Selecione o Mês</label>
         <select id="filter-month" onchange="onMonthChange()"><option value="ALL">Todos os Meses</option></select>
@@ -134,16 +139,55 @@
         <input type="date" id="filter-date-end" onchange="applyFilters()">
       </div>
       
-      <div class="filter-group filter-jogos-only">
+      <!-- Filtros Avançados de Jogos -->
+      <div class="filter-group filter-jogos-all">
         <label>Adversário</label>
         <select id="filter-adv" onchange="applyFilters()"><option value="ALL">Todos os Adversários</option></select>
       </div>
-      <div class="filter-group filter-jogos-only">
+      <div class="filter-group filter-jogos-all">
         <label>Competição</label>
         <select id="filter-comp" onchange="applyFilters()"><option value="ALL">Todas as Competições</option></select>
       </div>
+      <div class="filter-group filter-jogos-all">
+        <label>Local (Casa/Fora)</label>
+        <select id="filter-local" onchange="applyFilters()">
+          <option value="ALL">Todos os Locais</option>
+          <option value="casa">Mando de Campo (Casa)</option>
+          <option value="fora">Fora de Casa</option>
+        </select>
+      </div>
+      <div class="filter-group filter-jogos-all">
+        <label>Período do Dia</label>
+        <select id="filter-periodo-dia" onchange="applyFilters()">
+          <option value="ALL">Todos os Períodos</option>
+          <option value="manha">Manhã</option>
+          <option value="tarde">Tarde</option>
+          <option value="noite">Noite</option>
+        </select>
+      </div>
+      <div class="filter-group filter-jogos-all">
+        <label>Ranking Adversário</label>
+        <select id="filter-ranking" onchange="applyFilters()">
+          <option value="ALL">Todos os Níveis</option>
+          <option value="A">Ranking A</option>
+          <option value="B">Ranking B</option>
+          <option value="C">Ranking C</option>
+        </select>
+      </div>
 
-      <div class="filter-group filter-treinos-only" style="display:none;">
+      <div class="filter-group filter-jogos-all">
+        <label>Status Titularidade</label>
+        <select id="filter-titularidade" onchange="applyFilters()">
+          <option value="ALL">Todos os Status</option>
+          <option value="titular">Titular</option>
+          <option value="reserva">Reserva (Entrou)</option>
+          <option value="nao-entrou">Reserva (Não Entrou)</option>
+          <option value="nao-relacionado">Não Relacionado</option>
+        </select>
+      </div>
+
+      <!-- Filtros de Treino -->
+      <div class="filter-group filter-treinos-all">
         <label>Dimensão do Campo</label>
         <select id="filter-dimensao" onchange="applyFilters()">
           <option value="ALL">Todas as Dimensões</option>
@@ -151,17 +195,11 @@
           <option value="metade">Metade do Campo</option>
         </select>
       </div>
-
-      <div class="filter-group">
-        <label>Atleta</label>
-        <select id="filter-player" onchange="applyFilters()"><option value="ALL">Todos os Atletas</option></select>
-      </div>
-
-      <div class="filter-group filter-treinos-only" style="display:none;">
+      <div class="filter-group filter-treinos-all">
         <label>Tópico Geral</label>
         <select id="filter-topico" onchange="onTopicoChange()"><option value="ALL">Todos os Tópicos</option></select>
       </div>
-      <div class="filter-group filter-treinos-only" style="display:none;">
+      <div class="filter-group filter-treinos-all">
         <label>Conteúdo Específico</label>
         <select id="filter-conteudo" onchange="applyFilters()"><option value="ALL">Todos os Conteúdos</option></select>
       </div>
@@ -353,7 +391,6 @@
         </div>
       </div>
 
-      <!-- Resumo Geral em Números -->
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-lbl">Jogos</div><div class="kpi-val" id="card-kpi-jogos">0</div></div>
         <div class="kpi-card"><div class="kpi-lbl">Mins em Jogo</div><div class="kpi-val" id="card-kpi-min-jogo">0'</div></div>
@@ -366,10 +403,17 @@
 
       <div class="grid-2col">
         <div class="card">
-          <div class="card-header-bar">Nota Média por Tópico de Treino</div>
+          <div class="card-header-bar">Nota Média por Tópico Geral de Treino</div>
           <div id="card-chart-topicos" class="compact-chart-container"></div>
         </div>
 
+        <div class="card">
+          <div class="card-header-bar">Nota Média por Conteúdo Específico de Treino</div>
+          <div id="card-chart-conteudos" class="compact-chart-container"></div>
+        </div>
+      </div>
+
+      <div class="grid-2col">
         <div class="card">
           <div class="card-header-bar">Histórico Recente de Treinos</div>
           <div class="table-container">
@@ -385,25 +429,25 @@
             </table>
           </div>
         </div>
-      </div>
 
-      <div class="card">
-        <div class="card-header-bar">Histórico Recente nos Jogos</div>
-        <div class="table-container">
-          <table id="card-table-jogos">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Adversário</th>
-                <th>Titularidade</th>
-                <th>Minutagem</th>
-                <th>Gols</th>
-                <th>CA</th>
-                <th>CV</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
+        <div class="card">
+          <div class="card-header-bar">Histórico Recente nos Jogos</div>
+          <div class="table-container">
+            <table id="card-table-jogos">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Adversário</th>
+                  <th>Titularidade</th>
+                  <th>Minutagem</th>
+                  <th>Gols</th>
+                  <th>CA</th>
+                  <th>CV</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -542,16 +586,10 @@
       if (event && event.target) event.target.classList.add('active');
 
       if (viewId === 'aba-treino') {
-        document.querySelectorAll('.filter-jogos-only').forEach(e => e.style.display = 'none');
-        document.querySelectorAll('.filter-treinos-only').forEach(e => e.style.display = 'flex');
         renderAbaTreinos();
       } else if (viewId === 'aba-jogos') {
-        document.querySelectorAll('.filter-jogos-only').forEach(e => e.style.display = 'flex');
-        document.querySelectorAll('.filter-treinos-only').forEach(e => e.style.display = 'none');
         renderAbaJogos();
       } else if (viewId === 'aba-atleta') {
-        document.querySelectorAll('.filter-jogos-only').forEach(e => e.style.display = 'none');
-        document.querySelectorAll('.filter-treinos-only').forEach(e => e.style.display = 'none');
         renderAbaAtleta();
       }
     }
@@ -667,40 +705,56 @@
       else if (currentView === 'aba-atleta') renderAbaAtleta();
     }
 
-    // 1. LÓGICA ABA JOGOS
-    function renderAbaJogos() {
+    // Função Auxiliar de Filtro em Jogos
+    function matchGameFilters(j, rInd = null) {
       const dStartVal = document.getElementById('filter-date-start').value;
       const dEndVal = document.getElementById('filter-date-end').value;
       const fAdv = document.getElementById('filter-adv').value;
-      const fPlayer = document.getElementById('filter-player').value;
       const fComp = document.getElementById('filter-comp').value;
+      const fLocal = document.getElementById('filter-local').value;
+      const fPeriodo = document.getElementById('filter-periodo-dia').value;
+      const fRanking = document.getElementById('filter-ranking').value;
+      const fTitularidade = document.getElementById('filter-titularidade').value;
+
+      const d = parseDateString(getVal(j, 'Data'));
+      if (dStartVal && d && d < new Date(dStartVal + 'T00:00:00')) return false;
+      if (dEndVal && d && d > new Date(dEndVal + 'T23:59:59')) return false;
+
+      if (fAdv !== 'ALL' && cleanString(getVal(j, 'Adversario')) !== cleanString(fAdv)) return false;
+      if (fComp !== 'ALL' && cleanString(getVal(j, 'Competicao')) !== cleanString(fComp)) return false;
+
+      if (fLocal !== 'ALL') {
+        const localVal = cleanString(getVal(j, 'Mando') || getVal(j, 'Local'));
+        if (fLocal === 'casa' && !localVal.includes('casa') && !localVal.includes('mando')) return false;
+        if (fLocal === 'fora' && !localVal.includes('fora')) return false;
+      }
+
+      if (fPeriodo !== 'ALL') {
+        const per = cleanString(getVal(j, 'Periodo') || getVal(j, 'Horario'));
+        if (!per.includes(cleanString(fPeriodo))) return false;
+      }
+
+      if (fRanking !== 'ALL') {
+        const rk = (getVal(j, 'Ranking') || 'C').toUpperCase();
+        if (rk !== fRanking) return false;
+      }
+
+      if (rInd && fTitularidade !== 'ALL') {
+        const tit = cleanString(getVal(rInd, 'Titularidade'));
+        if (!tit.includes(cleanString(fTitularidade))) return false;
+      }
+
+      return true;
+    }
+
+    // 1. LÓGICA ABA JOGOS
+    function renderAbaJogos() {
+      const fPlayer = document.getElementById('filter-player').value;
 
       let posJogo = DB.posJogo || [];
       let posJogoInd = DB.posJogoIndividual || [];
 
-      if (dStartVal || dEndVal) {
-        const dStart = dStartVal ? new Date(dStartVal + 'T00:00:00') : null;
-        const dEnd = dEndVal ? new Date(dEndVal + 'T23:59:59') : null;
-
-        posJogo = posJogo.filter(j => {
-          const d = parseDateString(getVal(j, 'Data'));
-          if (!d) return false;
-          if (dStart && d < dStart) return false;
-          if (dEnd && d > dEnd) return false;
-          return true;
-        });
-
-        posJogoInd = posJogoInd.filter(j => {
-          const d = parseDateString(getVal(j, 'Data'));
-          if (!d) return false;
-          if (dStart && d < dStart) return false;
-          if (dEnd && d > dEnd) return false;
-          return true;
-        });
-      }
-
-      if (fAdv !== 'ALL') posJogo = posJogo.filter(j => cleanString(getVal(j, 'Adversario')) === cleanString(fAdv));
-      if (fComp !== 'ALL') posJogo = posJogo.filter(j => cleanString(getVal(j, 'Competicao')) === cleanString(fComp));
+      posJogo = posJogo.filter(j => matchGameFilters(j));
 
       let athleteFiltered = (fPlayer !== 'ALL');
       let athleteGamesSet = new Set();
@@ -1105,7 +1159,7 @@
       });
     }
 
-    // 3. LÓGICA DA ABA CARTÃO DO ATLETA
+    // 3. LÓGICA DA ABA CARTÃO DO ATLETA (COM TODOS OS FILTROS)
     function renderAbaAtleta() {
       const fPlayer = document.getElementById('filter-player').value;
       const targetClean = cleanString(fPlayer);
@@ -1127,18 +1181,22 @@
         document.getElementById('card-kpi-nota-treino').innerText = '0.0';
 
         document.getElementById('card-chart-topicos').innerHTML = '';
+        document.getElementById('card-chart-conteudos').innerHTML = '';
         document.querySelector('#card-table-treinos tbody').innerHTML = '';
         document.querySelector('#card-table-jogos tbody').innerHTML = '';
         return;
       }
 
-      // Busca dados cadastrais
+      // Busca dados cadastrais com leitura ampla da Perna Dominante
       const ath = (DB.baseJogadores || []).find(j => cleanString(getVal(j, 'Nome')) === targetClean);
       document.getElementById('card-nome').innerText = toTitleCase(fPlayer);
 
       if (ath) {
         document.getElementById('card-posicao').innerText = getVal(ath, 'Posição') || getVal(ath, 'Posicao') || '-';
-        document.getElementById('card-perna').innerText = getVal(ath, 'Perna dominante') || getVal(ath, 'Perna Dominante') || '-';
+        
+        const pernaVal = getVal(ath, 'Perna dominante') || getVal(ath, 'Perna Dominante') || getVal(ath, 'Perna') || getVal(ath, 'Dominancia') || '-';
+        document.getElementById('card-perna').innerText = pernaVal;
+
         document.getElementById('card-nasc').innerText = getVal(ath, 'Data Nasc') || getVal(ath, 'Nascimento') || '-';
 
         const fotoUrl = getVal(ath, 'Link foto');
@@ -1152,31 +1210,42 @@
         }
       }
 
-      // 1. Dados dos Jogos
+      // 1. Jogos com Filtros Aplicados
       let jogosAtleta = (DB.posJogoIndividual || []).filter(r => cleanString(getVal(r, 'Nome')) === targetClean);
       let totalJogos = 0, totalMinJogo = 0, totalGols = 0, totalAss = 0;
       let tbodyJogos = document.querySelector('#card-table-jogos tbody');
       tbodyJogos.innerHTML = '';
 
-      jogosAtleta.forEach(r => {
-        const min = parseNum(getVal(r, 'Minutagem'));
-        if (min > 0) {
-          totalJogos++;
-          totalMinJogo += min;
-          const g = parseNum(getVal(r, 'Gols feitos'));
-          const a = parseNum(getVal(r, 'Assistencias'));
-          totalGols += g;
-          totalAss += a;
+      let posJogoMap = {};
+      (DB.posJogo || []).forEach(j => {
+        const key = getVal(j, 'No Jogo') || getVal(j, 'Data');
+        posJogoMap[key] = j;
+      });
 
-          tbodyJogos.innerHTML += `<tr>
-            <td>${getVal(r, 'Data')}</td>
-            <td><b>${getVal(r, 'Adversario') || getVal(r, 'No Jogo')}</b></td>
-            <td>${getVal(r, 'Titularidade')}</td>
-            <td>${min}'</td>
-            <td><b>${g}</b></td>
-            <td>${parseNum(getVal(r, 'Cartao amarelo'))}</td>
-            <td>${parseNum(getVal(r, 'Cartao vermelho'))}</td>
-          </tr>`;
+      jogosAtleta.forEach(r => {
+        const matchKey = getVal(r, 'No Jogo') || getVal(r, 'Data');
+        const parentGame = posJogoMap[matchKey] || {};
+
+        if (matchGameFilters(parentGame, r)) {
+          const min = parseNum(getVal(r, 'Minutagem'));
+          if (min > 0 || getVal(r, 'Titularidade')) {
+            totalJogos++;
+            totalMinJogo += min;
+            const g = parseNum(getVal(r, 'Gols feitos'));
+            const a = parseNum(getVal(r, 'Assistencias'));
+            totalGols += g;
+            totalAss += a;
+
+            tbodyJogos.innerHTML += `<tr>
+              <td>${getVal(r, 'Data')}</td>
+              <td><b>${getVal(parentGame, 'Adversario') || getVal(r, 'Adversario') || getVal(r, 'No Jogo')}</b></td>
+              <td>${getVal(r, 'Titularidade')}</td>
+              <td>${min}'</td>
+              <td><b>${g}</b></td>
+              <td>${parseNum(getVal(r, 'Cartao amarelo'))}</td>
+              <td>${parseNum(getVal(r, 'Cartao vermelho'))}</td>
+            </tr>`;
+          }
         }
       });
 
@@ -1185,17 +1254,26 @@
       document.getElementById('card-kpi-gols').innerText = totalGols;
       document.getElementById('card-kpi-ass').innerText = totalAss;
 
-      // 2. Dados dos Treinos
+      // 2. Treinos com Filtros Aplicados
+      const dStartVal = document.getElementById('filter-date-start').value;
+      const dEndVal = document.getElementById('filter-date-end').value;
+      const fDimensao = document.getElementById('filter-dimensao').value;
+      const fTopico = document.getElementById('filter-topico').value;
+      const fConteudo = document.getElementById('filter-conteudo').value;
+
       let treinosCount = 0, totalMinTreino = 0, somaNotasTreino = 0;
       let dateRatings = {};
       let tbodyTreinos = document.querySelector('#card-table-treinos tbody');
       tbodyTreinos.innerHTML = '';
 
-      // Mapeia minutagem por treino
-      let dateMinMap = {};
+      let dateSessionMap = {};
       (DB.posTreino || []).forEach(t => {
         const dtKey = formatDateKey(getVal(t, 'Data'));
-        dateMinMap[dtKey] = extractMinutagemEfetiva(t);
+        dateSessionMap[dtKey] = {
+          minEfetiva: extractMinutagemEfetiva(t),
+          dimensao: getVal(t, 'Dimensao do campo'),
+          dtParsed: parseDateString(getVal(t, 'Data'))
+        };
       });
 
       (DB.posTreinoIndividual || []).forEach(row => {
@@ -1205,16 +1283,21 @@
               const nota = parseNum(row[dateCol]);
               if (nota > 0) {
                 const dtKey = formatDateKey(dateCol);
+                const sInfo = dateSessionMap[dtKey] || { minEfetiva: 0, dimensao: '', dtParsed: null };
+
+                if (dStartVal && sInfo.dtParsed && sInfo.dtParsed < new Date(dStartVal + 'T00:00:00')) return;
+                if (dEndVal && sInfo.dtParsed && sInfo.dtParsed > new Date(dEndVal + 'T23:59:59')) return;
+                if (fDimensao !== 'ALL' && !cleanString(sInfo.dimensao).includes(cleanString(fDimensao))) return;
+
                 treinosCount++;
                 somaNotasTreino += nota;
                 dateRatings[dtKey] = nota;
 
-                const minEfet = dateMinMap[dtKey] || 0;
-                totalMinTreino += minEfet;
+                totalMinTreino += sInfo.minEfetiva;
 
                 tbodyTreinos.innerHTML += `<tr>
                   <td>${dateCol}</td>
-                  <td>${minEfet}'</td>
+                  <td>${sInfo.minEfetiva}'</td>
                   <td><b>${nota.toFixed(1)} pts</b></td>
                 </tr>`;
               }
@@ -1227,11 +1310,18 @@
       document.getElementById('card-kpi-min-treino').innerText = totalMinTreino + "'";
       document.getElementById('card-kpi-nota-treino').innerText = treinosCount > 0 ? (somaNotasTreino / treinosCount).toFixed(1) : '0.0';
 
-      // 3. Tópicos do Atleta
+      // 3. Tópicos e Conteúdos do Atleta
       let topicosStats = {};
+      let conteudosStats = {};
+
       (DB.posTreinoConteudo || []).forEach(row => {
         const topico = getVal(row, 'TOPICOS') || getVal(row, 'TOPICO');
-        if (!topico) return;
+        const conteudo = getVal(row, 'Conteudos') || getVal(row, 'Conteudo');
+
+        if (!topico || !conteudo) return;
+
+        if (fTopico !== 'ALL' && cleanString(topico) !== cleanString(fTopico)) return;
+        if (fConteudo !== 'ALL' && cleanString(conteudo) !== cleanString(fConteudo)) return;
 
         Object.keys(row).forEach(dateCol => {
           if (dateCol.includes('/')) {
@@ -1239,27 +1329,51 @@
             if (val === 1) {
               const dtKey = formatDateKey(dateCol);
               if (dateRatings[dtKey] !== undefined) {
+                // Tópicos
                 if (!topicosStats[topico]) topicosStats[topico] = { sum: 0, count: 0 };
                 topicosStats[topico].sum += dateRatings[dtKey];
                 topicosStats[topico].count += 1;
+
+                // Conteúdos
+                if (!conteudosStats[conteudo]) conteudosStats[conteudo] = { sum: 0, count: 0 };
+                conteudosStats[conteudo].sum += dateRatings[dtKey];
+                conteudosStats[conteudo].count += 1;
               }
             }
           }
         });
       });
 
-      const cardChart = document.getElementById('card-chart-topicos');
-      cardChart.innerHTML = '';
+      // Renderiza Tópicos
+      const cardChartTop = document.getElementById('card-chart-topicos');
+      cardChartTop.innerHTML = '';
 
       Object.keys(topicosStats).forEach(top => {
         const media = (topicosStats[top].sum / topicosStats[top].count).toFixed(1);
         const pct = Math.round((parseFloat(media) / 10) * 100);
 
-        cardChart.innerHTML += `
+        cardChartTop.innerHTML += `
           <div class="bar-row">
             <div class="bar-label" title="${top}">${top}</div>
             <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
             <div class="bar-val">${media} pts (${topicosStats[top].count}x)</div>
+          </div>
+        `;
+      });
+
+      // Renderiza Conteúdos
+      const cardChartCont = document.getElementById('card-chart-conteudos');
+      cardChartCont.innerHTML = '';
+
+      Object.keys(conteudosStats).forEach(c => {
+        const media = (conteudosStats[c].sum / conteudosStats[c].count).toFixed(1);
+        const pct = Math.round((parseFloat(media) / 10) * 100);
+
+        cardChartCont.innerHTML += `
+          <div class="bar-row">
+            <div class="bar-label" title="${c}">${c}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+            <div class="bar-val">${media} pts (${conteudosStats[c].count}x)</div>
           </div>
         `;
       });
