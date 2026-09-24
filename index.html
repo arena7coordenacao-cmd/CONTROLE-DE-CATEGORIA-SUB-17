@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard Categoria Sub-17 | Performance & Análise</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --bg-primary: #f0f2f5;
@@ -27,7 +28,10 @@
       position: fixed; height: 100vh; overflow-y: auto; z-index: 100;
     }
 
-    .brand { font-size: 1.1rem; font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 12px; text-transform: uppercase; }
+    .brand-logo-box { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 12px; }
+    .brand-logo-box img { width: 42px; height: 42px; object-fit: contain; border-radius: 6px; background: #fff; padding: 2px; }
+    .brand-title { font-size: 0.95rem; font-weight: 800; text-transform: uppercase; line-height: 1.2; }
+
     .nav-item { padding: 12px 14px; border-radius: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; color: #d1fae5; transition: 0.2s; }
     .nav-item:hover, .nav-item.active { background-color: var(--green-secondary); color: #052e16; }
 
@@ -43,7 +47,7 @@
 
     .filter-bar {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
       gap: 12px;
       background: var(--bg-card);
       padding: 16px;
@@ -54,33 +58,20 @@
     }
 
     .filter-group { display: flex; flex-direction: column; gap: 4px; }
-    
     .filter-group label {
-      font-size: 0.65rem;
-      font-weight: 800;
-      color: var(--green-header);
-      text-transform: uppercase;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 0.63rem; font-weight: 800; color: var(--green-header);
+      text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
     .filter-group select, .filter-group input {
-      width: 100%;
-      padding: 7px 8px;
-      border-radius: 4px;
-      border: 1px solid var(--border-color);
-      font-size: 0.78rem;
-      background: #fff;
-      color: var(--text-main);
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      width: 100%; padding: 7px 8px; border-radius: 4px; border: 1px solid var(--border-color);
+      font-size: 0.78rem; background: #fff; color: var(--text-main); text-overflow: ellipsis; white-space: nowrap;
     }
 
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 16px; }
     .kpi-card { background: var(--bg-card); padding: 10px; border-radius: 6px; box-shadow: var(--shadow); text-align: center; border-top: 3px solid var(--green-primary); }
-    .kpi-val { font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
-    .kpi-lbl { font-size: 0.6rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
+    .kpi-val { font-size: 1.15rem; font-weight: 800; color: var(--text-main); }
+    .kpi-lbl { font-size: 0.58rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
 
     .grid-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; margin-bottom: 16px; }
 
@@ -103,6 +94,8 @@
     th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border-color); }
     th { background: #f8fafc; color: var(--green-header); font-weight: 700; position: sticky; top: 0; }
 
+    .obs-box { background: #f8fafc; padding: 12px; border-radius: 6px; border-left: 4px solid var(--green-primary); font-size: 0.82rem; line-height: 1.4; color: #334155; min-height: 60px; }
+
     .profile-header-card { display: flex; gap: 20px; background: var(--bg-card); padding: 20px; border-radius: 8px; box-shadow: var(--shadow); margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
     .profile-avatar-box { width: 130px; height: 130px; border-radius: 12px; border: 4px solid var(--green-primary); background: #e2e8f0; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .profile-avatar-box img { width: 100%; height: 100%; object-fit: cover; }
@@ -113,13 +106,8 @@
     .profile-meta-lbl { font-size: 0.62rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; }
     .profile-meta-val { font-size: 0.88rem; font-weight: 700; color: var(--text-main); }
 
-    .player-avatar { width: 100px; height: 100px; border-radius: 8px; border: 3px solid var(--green-primary); background: #e2e8f0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .player-avatar img { width: 100%; height: 100%; object-fit: cover; }
-
-    .col-chart-container { display: flex; align-items: flex-end; justify-content: space-around; height: 160px; padding-top: 15px; border-bottom: 2px solid var(--border-color); }
-    .col-item { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 40%; }
-    .col-bar { width: 100%; background: var(--green-primary); border-radius: 4px 4px 0 0; transition: height 0.3s ease; display: flex; justify-content: center; align-items: flex-start; color: white; font-weight: 800; font-size: 0.8rem; padding-top: 4px; min-height: 22px; }
-    .col-label { font-size: 0.72rem; font-weight: 700; color: var(--text-main); }
+    .staff-card-avatar { width: 120px; height: 120px; border-radius: 8px; border: 3px solid var(--green-primary); background: #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; text-align: center; }
+    .staff-card-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
     .dashboard-view { display: none; }
     .dashboard-view.active { display: block; }
@@ -133,11 +121,14 @@
 
   <div id="loader">
     <div class="spinner"></div>
-    <span id="loader-msg">Carregando dados das planilhas...</span>
+    <span id="loader-msg">Carregando dados e mídias...</span>
   </div>
 
   <sidebar>
-    <div class="brand">⚽ SUB-17 | PERFORMANCE</div>
+    <div class="brand-logo-box">
+      <img id="sidebar-logo" src="" style="display:none;" />
+      <div class="brand-title">⚽ SUB-17<br>PERFORMANCE</div>
+    </div>
     <div class="nav-item active" onclick="switchView('aba-jogos', 'JOGOS', event)">📊 Jogos</div>
     <div class="nav-item" onclick="switchView('aba-treino', 'TREINOS', event)">📋 Treinos</div>
     <div class="nav-item" onclick="switchView('aba-atleta', 'CARTÃO DO ATLETA', event)">👤 Cartão do Atleta</div>
@@ -150,13 +141,13 @@
     </header>
 
     <div class="filter-bar">
-      <!-- Filtro de Atleta (Invisível na Aba Jogos Geral, Visível no Atleta) -->
+      <!-- Filtro Atleta (Exclusivo da Aba Atleta) -->
       <div class="filter-group filter-atleta-only" style="display:none;">
         <label>Atleta Selecionado</label>
         <select id="filter-player" onchange="applyFilters()"><option value="ALL">Todos os Atletas</option></select>
       </div>
 
-      <!-- Filtros Temporais (Comuns) -->
+      <!-- Temporais -->
       <div class="filter-group">
         <label>Mês</label>
         <select id="filter-month" onchange="onMonthChange()"><option value="ALL">Todos os Meses</option></select>
@@ -170,7 +161,7 @@
         <input type="date" id="filter-date-end" onchange="applyFilters()">
       </div>
       
-      <!-- Filtros Exclusivos da Aba JOGOS -->
+      <!-- Filtros Exclusivos de JOGOS -->
       <div class="filter-group filter-jogos-group">
         <label>Competição</label>
         <select id="filter-comp" onchange="applyFilters()"><option value="ALL">Todas as Competições</option></select>
@@ -195,26 +186,7 @@
           <option value="fora">Fora</option>
         </select>
       </div>
-      <div class="filter-group filter-jogos-group">
-        <label>Período do Dia</label>
-        <select id="filter-periodo-dia" onchange="applyFilters()">
-          <option value="ALL">Todos os Períodos</option>
-          <option value="manha">Manhã</option>
-          <option value="tarde">Tarde</option>
-          <option value="noite">Noite</option>
-        </select>
-      </div>
-      <div class="filter-group filter-jogos-group">
-        <label>Ranking Adv.</label>
-        <select id="filter-ranking" onchange="applyFilters()">
-          <option value="ALL">Todos os Níveis</option>
-          <option value="A">Ranking A</option>
-          <option value="B">Ranking B</option>
-          <option value="C">Ranking C</option>
-        </select>
-      </div>
 
-      <!-- Filtro de Titularidade (Visível apenas no Cartão do Atleta) -->
       <div class="filter-group filter-atleta-only" style="display:none;">
         <label>Titularidade</label>
         <select id="filter-titularidade" onchange="applyFilters()">
@@ -226,7 +198,7 @@
         </select>
       </div>
 
-      <!-- Filtros Exclusivos da Aba TREINOS -->
+      <!-- Filtros Exclusivos de TREINOS -->
       <div class="filter-group filter-treinos-group" style="display:none;">
         <label>Dimensão do Campo</label>
         <select id="filter-dimensao" onchange="applyFilters()">
@@ -248,25 +220,49 @@
     <!-- 1. ABA JOGOS -->
     <div id="aba-jogos" class="dashboard-view active">
       <div style="display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
-        <div class="card" style="margin:0; width:150px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px;">
-          <div class="player-avatar">
-            <svg id="jogos-silhueta" width="50" height="50" viewBox="0 0 24 24" fill="#94a3b8">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-            </svg>
-            <img id="jogos-foto" src="" style="display:none;" />
+        <div class="card" style="margin:0; width:160px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px;">
+          <div class="staff-card-avatar">
+            <img id="jogos-logo-arena" src="" style="display:none;" />
+            <svg id="jogos-silhueta-arena" width="50" height="50" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           </div>
-          <span id="jogos-nome-atleta" style="font-size:0.75rem; font-weight:800; text-align:center; margin-top:8px; color:var(--green-header)">TODOS OS ATLETAS</span>
+          <span style="font-size:0.75rem; font-weight:800; text-align:center; margin-top:6px; color:var(--green-header)">ARENA | SUB-17</span>
         </div>
 
         <div style="flex:1;">
           <div class="kpi-grid">
             <div class="kpi-card"><div class="kpi-lbl">Nº de Jogos</div><div class="kpi-val" id="kpi-jogos">0</div></div>
             <div class="kpi-card"><div class="kpi-lbl">% Vitórias</div><div class="kpi-val" id="kpi-pct-vitorias">0%</div></div>
-            <div class="kpi-card"><div class="kpi-lbl">Minutagem Em Campo</div><div class="kpi-val" id="kpi-minutagem">0'</div></div>
-            <div class="kpi-card"><div class="kpi-lbl" id="lbl-gols-atleta">Gols Feitos (Equipe)</div><div class="kpi-val" id="kpi-gols-atleta">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Minutagem Total</div><div class="kpi-val" id="kpi-minutagem">0'</div></div>
             <div class="kpi-card"><div class="kpi-lbl">Gols Pró (Equipe)</div><div class="kpi-val" id="kpi-gols-pro">0</div></div>
-            <div class="kpi-card"><div class="kpi-lbl">Gols Sofridos em Campo</div><div class="kpi-val" id="kpi-gols-contra">0</div></div>
-            <div class="kpi-card"><div class="kpi-lbl">Assistências</div><div class="kpi-val" id="kpi-ass">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Gols Sofridos</div><div class="kpi-val" id="kpi-gols-contra">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Distância Máx (Dias)</div><div class="kpi-val" id="kpi-dist-max">0 d</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Distância Mín (Dias)</div><div class="kpi-val" id="kpi-dist-min">0 d</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Média Intervalo</div><div class="kpi-val" id="kpi-dist-media">0 d</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header-bar">Evolução do Desempenho nos Jogos (Últimas Partidas)</div>
+          <div style="height:220px;"><canvas id="chart-evolucao-jogos"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header-bar">Análise Qualitativa do Conflito / Partida</div>
+          <div style="margin-bottom:10px;">
+            <label style="font-size:0.68rem; font-weight:800; color:var(--green-header)">Selecione o Jogo Especifico:</label>
+            <select id="select-jogo-obs" onchange="renderJogoObservacoes()" style="width:100%; padding:6px; margin-top:4px; font-size:0.78rem; border-radius:4px; border:1px solid var(--border-color);"></select>
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:170px;">
+              <span style="font-size:0.7rem; font-weight:800; color:#15803d;">👍 PONTOS POSITIVOS:</span>
+              <div class="obs-box" id="box-pontos-positivos">Selecione um jogo para visualizar os destaques.</div>
+            </div>
+            <div style="flex:1; min-width:170px;">
+              <span style="font-size:0.7rem; font-weight:800; color:#b91c1c;">👎 PONTOS NEGATIVOS / A MELHORAR:</span>
+              <div class="obs-box" id="box-pontos-negativos" style="border-left-color:#b91c1c;">Selecione um jogo para visualizar os aspectos de melhoria.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -280,53 +276,9 @@
           <div class="card-header-bar">Desempenho Individual nos Jogos</div>
           <div class="table-container">
             <table id="table-jogos-atleta">
-              <thead>
-                <tr>
-                  <th>Jogador</th>
-                  <th>Minutagem</th>
-                  <th>Gols</th>
-                  <th>Assist.</th>
-                  <th>CA</th>
-                  <th>CV</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Jogador</th><th>Minutagem</th><th>Gols</th><th>Assist.</th><th>CA</th><th>CV</th></tr></thead>
               <tbody></tbody>
             </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid-2col">
-        <div class="card">
-          <div class="card-header-bar">Capitães da Equipe</div>
-          <div class="table-container">
-            <table id="table-capitaes">
-              <thead>
-                <tr>
-                  <th>Capitão</th>
-                  <th>Nº de Jogos</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-        
-        <div class="card">
-          <div class="card-header-bar">Jogos por Nível do Adversário (Ranking)</div>
-          <div class="col-chart-container" id="chart-ranking-adv">
-            <div class="col-item">
-              <div class="col-bar" id="bar-rk-a" style="height:0%;">0</div>
-              <div class="col-label">Ranking A</div>
-            </div>
-            <div class="col-item">
-              <div class="col-bar" id="bar-rk-b" style="height:0%;">0</div>
-              <div class="col-label">Ranking B</div>
-            </div>
-            <div class="col-item">
-              <div class="col-bar" id="bar-rk-c" style="height:0%;">0</div>
-              <div class="col-label">Ranking C</div>
-            </div>
           </div>
         </div>
       </div>
@@ -334,11 +286,46 @@
 
     <!-- 2. ABA TREINOS -->
     <div id="aba-treino" class="dashboard-view">
-      <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-lbl">Nº de Treinos</div><div class="kpi-val" id="kpi-treino-qtd">0</div></div>
-        <div class="kpi-card"><div class="kpi-lbl">Nota Média Sessões</div><div class="kpi-val" id="kpi-treino-nota-media">0.0</div></div>
-        <div class="kpi-card"><div class="kpi-lbl">Minutagem Efetiva Total</div><div class="kpi-val" id="kpi-treino-min-total">0'</div></div>
-        <div class="kpi-card"><div class="kpi-lbl">Média Mins/Treino</div><div class="kpi-val" id="kpi-treino-min-media">0'</div></div>
+      <div style="display:flex; gap:16px; margin-bottom:16px; flex-wrap:wrap;">
+        <div class="card" style="margin:0; width:160px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px;">
+          <div class="staff-card-avatar">
+            <img id="treino-foto-treinador" src="" style="display:none;" />
+            <svg id="treino-silhueta-treinador" width="50" height="50" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          </div>
+          <span id="treino-nome-treinador" style="font-size:0.75rem; font-weight:800; text-align:center; margin-top:6px; color:var(--green-header)">TREINADOR PRINCIPAL</span>
+        </div>
+
+        <div style="flex:1;">
+          <div class="kpi-grid">
+            <div class="kpi-card"><div class="kpi-lbl">Nº de Treinos</div><div class="kpi-val" id="kpi-treino-qtd">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Nota Média Sessões</div><div class="kpi-val" id="kpi-treino-nota-media">0.0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Minutagem Total</div><div class="kpi-val" id="kpi-treino-min-total">0'</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Média Atletas/Treino</div><div class="kpi-val" id="kpi-media-atletas">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Média Atletas Avaliados</div><div class="kpi-val" id="kpi-media-avaliados">0</div></div>
+            <div class="kpi-card"><div class="kpi-lbl">Complexidade Média</div><div class="kpi-val" id="kpi-complexidade">N/A</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header-bar">Evolução das Notas (Últimos 10 Treinos & Conteúdos)</div>
+          <div style="height:220px;"><canvas id="chart-evolucao-treinos"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header-bar">Relação Numérica (Conexão com o Jogo) x Nota da Sessão</div>
+          <div style="height:220px;"><canvas id="chart-conexao-jogo"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header-bar">Relatório e Observações Gerais da Sessão de Treino</div>
+        <div style="margin-bottom:10px;">
+          <label style="font-size:0.68rem; font-weight:800; color:var(--green-header)">Selecione a Data do Treino Especifico:</label>
+          <select id="select-treino-obs" onchange="renderTreinoObservacoes()" style="width:100%; padding:6px; margin-top:4px; font-size:0.78rem; border-radius:4px; border:1px solid var(--border-color);"></select>
+        </div>
+        <div class="obs-box" id="box-obs-treino">Selecione uma sessão de treino para visualizar as observações registradas pela comissão.</div>
       </div>
 
       <div class="grid-2col">
@@ -364,69 +351,23 @@
           <div id="chart-treino-conteudos" class="compact-chart-container"></div>
         </div>
       </div>
-
-      <div class="grid-2col">
-        <div class="card">
-          <div class="card-header-bar">Nota Média da Sessão por Dimensão do Campo</div>
-          <div class="col-chart-container" id="chart-dimensao-campo">
-            <div class="col-item">
-              <div class="col-bar" id="bar-dim-inteiro" style="height:0%;">0.0</div>
-              <div class="col-label">Campo Inteiro</div>
-            </div>
-            <div class="col-item">
-              <div class="col-bar" id="bar-dim-metade" style="height:0%;">0.0</div>
-              <div class="col-label">Metade do Campo</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header-bar">Desempenho Individual por Atleta nos Treinos</div>
-          <div class="table-container">
-            <table id="table-treino-atletas">
-              <thead>
-                <tr>
-                  <th>Atleta</th>
-                  <th>Presenças em Treino</th>
-                  <th>Nota Média Individual</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- 3. ABA CARTÃO DO ATLETA -->
     <div id="aba-atleta" class="dashboard-view">
       <div class="profile-header-card">
         <div class="profile-avatar-box">
-          <svg id="card-silhueta" width="70" height="70" viewBox="0 0 24 24" fill="#94a3b8">
-            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-          </svg>
+          <svg id="card-silhueta" width="70" height="70" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
           <img id="card-foto" src="" style="display:none;" />
         </div>
 
         <div class="profile-info">
-          <div class="profile-name" id="card-nome">SELECIONE UM ATLETA</div>
+          <div class="profile-name" id="card-nome">SELECIONE UM ATLETA NO FILTRO</div>
           <div class="profile-meta-grid">
-            <div class="profile-meta-item">
-              <div class="profile-meta-lbl">Posição</div>
-              <div class="profile-meta-val" id="card-posicao">-</div>
-            </div>
-            <div class="profile-meta-item">
-              <div class="profile-meta-lbl">Categoria</div>
-              <div class="profile-meta-val" id="card-categoria">Sub-17</div>
-            </div>
-            <div class="profile-meta-item">
-              <div class="profile-meta-lbl">Perna Dominante</div>
-              <div class="profile-meta-val" id="card-perna">-</div>
-            </div>
-            <div class="profile-meta-item">
-              <div class="profile-meta-lbl">Data Nasc.</div>
-              <div class="profile-meta-val" id="card-nasc">-</div>
-            </div>
+            <div class="profile-meta-item"><div class="profile-meta-lbl">Posição</div><div class="profile-meta-val" id="card-posicao">-</div></div>
+            <div class="profile-meta-item"><div class="profile-meta-lbl">Categoria</div><div class="profile-meta-val" id="card-categoria">Sub-17</div></div>
+            <div class="profile-meta-item"><div class="profile-meta-lbl">Perna Dominante</div><div class="profile-meta-val" id="card-perna">-</div></div>
+            <div class="profile-meta-item"><div class="profile-meta-lbl">Data Nasc.</div><div class="profile-meta-val" id="card-nasc">-</div></div>
           </div>
         </div>
       </div>
@@ -439,6 +380,19 @@
         <div class="kpi-card"><div class="kpi-lbl">Presenças Treino</div><div class="kpi-val" id="card-kpi-treinos">0</div></div>
         <div class="kpi-card"><div class="kpi-lbl">Mins Efet. Treino</div><div class="kpi-val" id="card-kpi-min-treino">0'</div></div>
         <div class="kpi-card"><div class="kpi-lbl">Nota Média Treino</div><div class="kpi-val" id="card-kpi-nota-treino">0.0</div></div>
+      </div>
+
+      <!-- Gráficos Unificados do Atleta -->
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header-bar">Evolução do Atleta nos Últimos Jogos</div>
+          <div style="height:220px;"><canvas id="chart-atleta-jogos"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header-bar">Evolução nos Últimos 10 Treinos & Conteúdos Praticados</div>
+          <div style="height:220px;"><canvas id="chart-atleta-treinos"></canvas></div>
+        </div>
       </div>
 
       <div class="grid-2col">
@@ -458,13 +412,7 @@
           <div class="card-header-bar">Histórico Recente de Treinos</div>
           <div class="table-container">
             <table id="card-table-treinos">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Minutagem Efetiva</th>
-                  <th>Nota Individual</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Data</th><th>Minutagem Efetiva</th><th>Nota Individual</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -474,17 +422,7 @@
           <div class="card-header-bar">Histórico Recente nos Jogos</div>
           <div class="table-container">
             <table id="card-table-jogos">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Adversário</th>
-                  <th>Titularidade</th>
-                  <th>Minutagem</th>
-                  <th>Gols</th>
-                  <th>CA</th>
-                  <th>CV</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Data</th><th>Adversário</th><th>Titularidade</th><th>Minutagem</th><th>Gols</th><th>CA</th><th>CV</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -508,6 +446,7 @@
     let currentView = 'aba-jogos';
     let sortTopicoMode = 'freq';
     let sortConteudoMode = 'freq';
+    let chartsInstances = {};
 
     function cleanString(str) {
       return (str || '').toString().replace(/[\r\n]+/g, ' ').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -603,6 +542,7 @@
         DB.posTreinoConteudo = results[5].value || [];
         DB.posTreinoIndividual = results[6].value || [];
 
+        loadGlossarioMedia();
         populateFilters();
         switchView('aba-jogos', 'JOGOS');
         document.getElementById('loader').style.display = 'none';
@@ -610,6 +550,44 @@
         console.error("Erro na inicialização:", err);
         document.getElementById('loader-msg').innerText = "Erro ao carregar dados do Google Sheets.";
         document.getElementById('loader-msg').style.color = "red";
+      }
+    }
+
+    // Carrega Foto da Arena e Foto do Treinador do Glossário
+    function loadGlossarioMedia() {
+      if (!DB.glossario || DB.glossario.length === 0) return;
+
+      let logoArenaUrl = '';
+      let fotoTreinadorUrl = '';
+      let nomeTreinador = '';
+
+      DB.glossario.forEach(row => {
+        const desc = cleanString(getVal(row, 'Descrição') || getVal(row, 'Descricao') || getVal(row, 'Item'));
+        const link = getVal(row, 'Link') || getVal(row, 'URL') || getVal(row, 'Foto');
+        
+        if (desc.includes('logo') || desc.includes('arena')) logoArenaUrl = link;
+        if (desc.includes('treinador') || desc.includes('tecnico')) {
+          fotoTreinadorUrl = link;
+          nomeTreinador = getVal(row, 'Nome') || getVal(row, 'Treinador');
+        }
+      });
+
+      if (logoArenaUrl) {
+        document.getElementById('sidebar-logo').src = logoArenaUrl;
+        document.getElementById('sidebar-logo').style.display = 'block';
+        document.getElementById('jogos-logo-arena').src = logoArenaUrl;
+        document.getElementById('jogos-logo-arena').style.display = 'block';
+        document.getElementById('jogos-silhueta-arena').style.display = 'none';
+      }
+
+      if (fotoTreinadorUrl) {
+        document.getElementById('treino-foto-treinador').src = fotoTreinadorUrl;
+        document.getElementById('treino-foto-treinador').style.display = 'block';
+        document.getElementById('treino-silhueta-treinador').style.display = 'none';
+      }
+
+      if (nomeTreinador) {
+        document.getElementById('treino-nome-treinador').innerText = toTitleCase(nomeTreinador);
       }
     }
 
@@ -621,7 +599,6 @@
       document.getElementById('view-title').innerText = title;
       if (event && event.target) event.target.classList.add('active');
 
-      // Visibilidade Dinâmica de Filtros Conforme a Aba
       const jogosFilters = document.querySelectorAll('.filter-jogos-group');
       const treinosFilters = document.querySelectorAll('.filter-treinos-group');
       const atletaFilters = document.querySelectorAll('.filter-atleta-only');
@@ -769,8 +746,6 @@
       const fCatAdv = document.getElementById('filter-cat-adv').value;
       const fPlataforma = document.getElementById('filter-plataforma').value;
       const fLocal = document.getElementById('filter-local').value;
-      const fPeriodo = document.getElementById('filter-periodo-dia').value;
-      const fRanking = document.getElementById('filter-ranking').value;
       const fTitularidade = document.getElementById('filter-titularidade').value;
 
       const d = parseDateString(getVal(j, 'Data'));
@@ -796,16 +771,6 @@
         if (fLocal === 'fora' && !localVal.includes('fora')) return false;
       }
 
-      if (fPeriodo !== 'ALL') {
-        const per = cleanString(getVal(j, 'Periodo') || getVal(j, 'Horario'));
-        if (!per.includes(cleanString(fPeriodo))) return false;
-      }
-
-      if (fRanking !== 'ALL') {
-        const rk = (getVal(j, 'Ranking') || 'C').toUpperCase();
-        if (rk !== fRanking) return false;
-      }
-
       if (rInd && fTitularidade !== 'ALL') {
         const tit = cleanString(getVal(rInd, 'Titularidade'));
         if (!tit.includes(cleanString(fTitularidade))) return false;
@@ -814,15 +779,45 @@
       return true;
     }
 
+    // Helper para destruir e recriar gráficos do Chart.js
+    function renderLineChart(canvasId, labels, data, datasetLabel) {
+      if (chartsInstances[canvasId]) chartsInstances[canvasId].destroy();
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      chartsInstances[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: datasetLabel,
+            data: data,
+            borderColor: '#15803d',
+            backgroundColor: 'rgba(21, 128, 61, 0.1)',
+            fill: true,
+            tension: 0.3,
+            borderWidth: 3,
+            pointRadius: 5,
+            pointBackgroundColor: '#0f5426'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { min: 0, max: 10 } }
+        }
+      });
+    }
+
     // 1. LÓGICA ABA JOGOS
     function renderAbaJogos() {
       let posJogo = (DB.posJogo || []).filter(j => matchGameFilters(j));
       let posJogoInd = DB.posJogoIndividual || [];
 
+      // Ordena por data
+      posJogo.sort((a,b) => (parseDateString(getVal(a, 'Data')) || 0) - (parseDateString(getVal(b, 'Data')) || 0));
+
       let totalJogos = posJogo.length;
-      let vit = 0, der = 0, totalMin = 0, totalGolsPro = 0, totalGolsContra = 0, totalAss = 0;
-      let rankingCount = { A: 0, B: 0, C: 0 };
-      let capitaesCount = {};
+      let vit = 0, der = 0, totalMin = 0, totalGolsPro = 0, totalGolsContra = 0;
+      let gameDates = [];
 
       posJogo.forEach(j => {
         const res = cleanString(getVal(j, 'Resultado'));
@@ -831,48 +826,53 @@
 
         totalGolsPro += parseNum(getVal(j, 'Gols feitos'));
         totalGolsContra += parseNum(getVal(j, 'Gols sofridos'));
-
-        const rk = (getVal(j, 'Ranking') || 'C').toUpperCase();
-        if (rankingCount[rk] !== undefined) rankingCount[rk]++;
-
-        const cap = getVal(j, 'Capitao');
-        if (cap) capitaesCount[cap] = (capitaesCount[cap] || 0) + 1;
-
         totalMin += parseNum(getVal(j, 'Minutagem'));
+
+        const dParsed = parseDateString(getVal(j, 'Data'));
+        if (dParsed) gameDates.push(dParsed);
       });
+
+      // Cálculo de Distância em Dias
+      let distMax = 0, distMin = 999, distSoma = 0, diffCount = 0;
+      for (let i = 1; i < gameDates.length; i++) {
+        let diffDays = Math.round((gameDates[i] - gameDates[i-1]) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0) {
+          if (diffDays > distMax) distMax = diffDays;
+          if (diffDays < distMin) distMin = diffDays;
+          distSoma += diffDays;
+          diffCount++;
+        }
+      }
+
+      if (diffCount === 0) distMin = 0;
 
       const pctVit = totalJogos > 0 ? Math.round((vit / totalJogos) * 100) : 0;
 
       document.getElementById('kpi-jogos').innerText = totalJogos;
       document.getElementById('kpi-pct-vitorias').innerText = pctVit + '%';
       document.getElementById('kpi-minutagem').innerText = totalMin + "'";
-      document.getElementById('kpi-gols-atleta').innerText = totalGolsPro;
-      document.getElementById('lbl-gols-atleta').innerText = "Gols Feitos (Equipe)";
       document.getElementById('kpi-gols-pro').innerText = totalGolsPro;
       document.getElementById('kpi-gols-contra').innerText = totalGolsContra;
-      document.getElementById('kpi-ass').innerText = totalAss;
+      document.getElementById('kpi-dist-max').innerText = distMax + " d";
+      document.getElementById('kpi-dist-min').innerText = distMin + " d";
+      document.getElementById('kpi-dist-media').innerText = diffCount > 0 ? Math.round(distSoma / diffCount) + " d" : "0 d";
 
-      const tbodyCap = document.querySelector('#table-capitaes tbody');
-      tbodyCap.innerHTML = '';
-      Object.keys(capitaesCount).sort((a,b) => capitaesCount[b] - capitaesCount[a]).forEach(c => {
-        tbodyCap.innerHTML += `<tr><td><b>${c}</b></td><td>${capitaesCount[c]} jogos</td></tr>`;
+      // Gráfico de Evolução nos Jogos
+      let chartLabels = posJogo.map(j => `${getVal(j, 'Data')} (${getVal(j, 'Adversario')})`);
+      let chartData = posJogo.map(j => parseNum(getVal(j, 'Desempenho da equipe') || getVal(j, 'Nota geral') || getVal(j, 'Gols feitos')));
+      renderLineChart('chart-evolucao-jogos', chartLabels, chartData, 'Nota da Equipe no Jogo');
+
+      // Popula Select de Observações do Jogo
+      const selectObs = document.getElementById('select-jogo-obs');
+      selectObs.innerHTML = '';
+      posJogo.forEach(j => {
+        const label = `${getVal(j, 'Data')} - ${getVal(j, 'Adversario')} (${getVal(j, 'Competicao')})`;
+        selectObs.innerHTML += `<option value="${getVal(j, 'No Jogo') || getVal(j, 'Data')}">${label}</option>`;
       });
 
-      const maxRk = Math.max(rankingCount.A, rankingCount.B, rankingCount.C, 1);
-      
-      const barA = document.getElementById('bar-rk-a');
-      const barB = document.getElementById('bar-rk-b');
-      const barC = document.getElementById('bar-rk-c');
+      renderJogoObservacoes();
 
-      barA.style.height = Math.round((rankingCount.A / maxRk) * 100) + '%';
-      barA.innerText = rankingCount.A;
-
-      barB.style.height = Math.round((rankingCount.B / maxRk) * 100) + '%';
-      barB.innerText = rankingCount.B;
-
-      barC.style.height = Math.round((rankingCount.C / maxRk) * 100) + '%';
-      barC.innerText = rankingCount.C;
-
+      // Minutagem por Atleta
       const tbody = document.querySelector('#table-jogos-atleta tbody');
       tbody.innerHTML = '';
       let stats = {};
@@ -916,10 +916,16 @@
           <td>${stats[p].cv}</td>
         </tr>`;
       });
+    }
 
-      document.getElementById('jogos-nome-atleta').innerText = "TODOS OS ATLETAS";
-      document.getElementById('jogos-foto').style.display = 'none';
-      document.getElementById('jogos-silhueta').style.display = 'block';
+    function renderJogoObservacoes() {
+      const selectedKey = document.getElementById('select-jogo-obs').value;
+      const game = (DB.posJogo || []).find(j => (getVal(j, 'No Jogo') || getVal(j, 'Data')) === selectedKey);
+
+      if (game) {
+        document.getElementById('box-pontos-positivos').innerText = getVal(game, 'Pontos positivos') || getVal(game, 'Destaques') || "Sem destaques registrados.";
+        document.getElementById('box-pontos-negativos').innerText = getVal(game, 'Pontos negativos') || getVal(game, 'Pontos a melhorar') || "Sem observações de melhoria.";
+      }
     }
 
     // 2. LÓGICA ABA TREINOS
@@ -932,29 +938,92 @@
 
       let posTreino = DB.posTreino || [];
 
-      let dateSessionInfo = {};
-      posTreino.forEach(t => {
-        const rawDate = getVal(t, 'Data');
-        const dtKey = formatDateKey(rawDate);
-        const notaSessao = parseNum(getVal(t, 'Desempenho geral da sessao'));
-        const minEfetiva = extractMinutagemEfetiva(t);
-        const focoPrincipal = getVal(t, 'Conteudo Preparatoria');
-        const dimensao = getVal(t, 'Dimensao do campo');
-
-        if (dtKey) {
-          dateSessionInfo[dtKey] = {
-            notaSessao: notaSessao,
-            minutagemEfetiva: minEfetiva,
-            focoPrincipal: focoPrincipal,
-            dimensao: dimensao,
-            rawDate: rawDate
-          };
-        }
+      let filteredTreinos = posTreino.filter(t => {
+        const dtParsed = parseDateString(getVal(t, 'Data'));
+        if (dStartVal && dtParsed && dtParsed < new Date(dStartVal + 'T00:00:00')) return false;
+        if (dEndVal && dtParsed && dtParsed > new Date(dEndVal + 'T23:59:59')) return false;
+        if (fDimensao !== 'ALL' && !cleanString(getVal(t, 'Dimensao do campo')).includes(cleanString(fDimensao))) return false;
+        return true;
       });
 
+      filteredTreinos.sort((a,b) => (parseDateString(getVal(a, 'Data')) || 0) - (parseDateString(getVal(b, 'Data')) || 0));
+
+      let totalTreinos = filteredTreinos.length;
+      let somaNotas = 0, somaMinEfetiva = 0, somaAtletas = 0, somaAvaliados = 0;
+
+      filteredTreinos.forEach(t => {
+        somaNotas += parseNum(getVal(t, 'Desempenho geral da sessao'));
+        somaMinEfetiva += extractMinutagemEfetiva(t);
+        somaAtletas += parseNum(getVal(t, 'Numero de atletas') || getVal(t, 'Atletas presentes'));
+        somaAvaliados += parseNum(getVal(t, 'Atletas avaliados') || getVal(t, 'Atletas de avaliacao'));
+      });
+
+      document.getElementById('kpi-treino-qtd').innerText = totalTreinos;
+      document.getElementById('kpi-treino-nota-media').innerText = totalTreinos > 0 ? (somaNotas / totalTreinos).toFixed(1) : '0.0';
+      document.getElementById('kpi-treino-min-total').innerText = somaMinEfetiva + "'";
+      document.getElementById('kpi-media-atletas').innerText = totalTreinos > 0 ? Math.round(somaAtletas / totalTreinos) : '0';
+      document.getElementById('kpi-media-avaliados').innerText = totalTreinos > 0 ? Math.round(somaAvaliados / totalTreinos) : '0';
+
+      const lastTreino = filteredTreinos[filteredTreinos.length - 1];
+      document.getElementById('kpi-complexidade').innerText = lastTreino ? (getVal(lastTreino, 'Complexidade da tarefa') || getVal(lastTreino, 'Complexidade') || 'Média') : 'N/A';
+
+      // Gráfico de Evolução nos Treinos (Últimos 10)
+      let recent10 = filteredTreinos.slice(-10);
+      let tLabels = recent10.map(t => `${getVal(t, 'Data')} (${getVal(t, 'Conteudo Preparatoria') || getVal(t, 'Conteudo')})`);
+      let tData = recent10.map(t => parseNum(getVal(t, 'Desempenho geral da sessao')));
+      renderLineChart('chart-evolucao-treinos', tLabels, tData, 'Nota da Sessão de Treino');
+
+      // Gráfico Conexão com o Jogo x Nota da Sessão
+      let relNumericaCount = {};
+      filteredTreinos.forEach(t => {
+        let rel = getVal(t, 'Relacao numerica') || getVal(t, 'Conexao com o jogo') || 'Igualdade';
+        let nota = parseNum(getVal(t, 'Desempenho geral da sessao'));
+        if (!relNumericaCount[rel]) relNumericaCount[rel] = { sum: 0, count: 0 };
+        relNumericaCount[rel].sum += nota;
+        relNumericaCount[rel].count += 1;
+      });
+
+      let relLabels = Object.keys(relNumericaCount);
+      let relData = relLabels.map(r => (relNumericaCount[r].sum / relNumericaCount[r].count).toFixed(1));
+
+      if (chartsInstances['chart-conexao-jogo']) chartsInstances['chart-conexao-jogo'].destroy();
+      const ctxRel = document.getElementById('chart-conexao-jogo').getContext('2d');
+      chartsInstances['chart-conexao-jogo'] = new Chart(ctxRel, {
+        type: 'bar',
+        data: {
+          labels: relLabels,
+          datasets: [{
+            label: 'Nota Média da Sessão',
+            data: relData,
+            backgroundColor: '#15803d'
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 10 } } }
+      });
+
+      // Popula Select e Observações do Treino
+      const selectObs = document.getElementById('select-treino-obs');
+      selectObs.innerHTML = '';
+      filteredTreinos.forEach(t => {
+        selectObs.innerHTML += `<option value="${formatDateKey(getVal(t, 'Data'))}">${getVal(t, 'Data')} - ${getVal(t, 'Conteudo Preparatoria') || 'Sessão Generalista'}</option>`;
+      });
+
+      renderTreinoObservacoes();
+      renderAbaTreinosTopicosConteudos(filteredTreinos);
+    }
+
+    function renderTreinoObservacoes() {
+      const selectedKey = document.getElementById('select-treino-obs').value;
+      const treino = (DB.posTreino || []).find(t => formatDateKey(getVal(t, 'Data')) === selectedKey);
+
+      if (treino) {
+        document.getElementById('box-obs-treino').innerText = getVal(treino, 'Observacoes gerais') || getVal(treino, 'Relatorio da sessao') || getVal(treino, 'Observacoes') || "Sem observações registradas para esta sessão.";
+      }
+    }
+
+    function renderAbaTreinosTopicosConteudos(filteredTreinos) {
+      let filteredDatesSet = new Set(filteredTreinos.map(t => formatDateKey(getVal(t, 'Data'))));
       let topicosStats = {}, conteudosStats = {};
-      let datesWithSelectedContent = new Set();
-      let hasContentFilter = (fTopico !== 'ALL' || fConteudo !== 'ALL');
 
       (DB.posTreinoConteudo || []).forEach(row => {
         const topico = getVal(row, 'TOPICOS') || getVal(row, 'TOPICO');
@@ -962,180 +1031,30 @@
 
         if (!topico || !conteudo) return;
 
-        if (fTopico !== 'ALL' && cleanString(topico) !== cleanString(fTopico)) return;
-        if (fConteudo !== 'ALL' && cleanString(conteudo) !== cleanString(fConteudo)) return;
-
         Object.keys(row).forEach(dateCol => {
-          if (dateCol.includes('/')) {
-            const val = parseNum(row[dateCol]);
-            if (val === 1) {
-              const dtKey = formatDateKey(dateCol);
-              const info = dateSessionInfo[dtKey] || { notaSessao: 0, focoPrincipal: '', dimensao: '' };
-
-              const dtParsed = parseDateString(dateCol);
-              if (dtParsed) {
-                if (dStartVal && dtParsed < new Date(dStartVal + 'T00:00:00')) return;
-                if (dEndVal && dtParsed > new Date(dEndVal + 'T23:59:59')) return;
-              }
-
-              if (fDimensao !== 'ALL' && !cleanString(info.dimensao).includes(cleanString(fDimensao))) return;
-
-              datesWithSelectedContent.add(dtKey);
-
-              const notaParaCalculo = info.notaSessao;
-              const isFocoPrincipal = (cleanString(info.focoPrincipal) === cleanString(conteudo));
-              const peso = isFocoPrincipal ? 2 : 1;
-
-              if (!topicosStats[topico]) topicosStats[topico] = { count: 0, somaWeightedNota: 0, somaPesos: 0 };
+          if (dateCol.includes('/') && parseNum(row[dateCol]) === 1) {
+            const dtKey = formatDateKey(dateCol);
+            if (filteredDatesSet.has(dtKey)) {
+              if (!topicosStats[topico]) topicosStats[topico] = { count: 0 };
               topicosStats[topico].count += 1;
-              topicosStats[topico].somaWeightedNota += (notaParaCalculo * peso);
-              topicosStats[topico].somaPesos += peso;
 
-              if (!conteudosStats[conteudo]) conteudosStats[conteudo] = { count: 0, somaWeightedNota: 0, somaPesos: 0 };
+              if (!conteudosStats[conteudo]) conteudosStats[conteudo] = { count: 0 };
               conteudosStats[conteudo].count += 1;
-              conteudosStats[conteudo].somaWeightedNota += (notaParaCalculo * peso);
-              conteudosStats[conteudo].somaPesos += peso;
             }
           }
         });
       });
 
-      let filteredTreinos = posTreino.filter(t => {
-        const dtKey = formatDateKey(getVal(t, 'Data'));
-        const dtParsed = parseDateString(getVal(t, 'Data'));
-
-        if (dStartVal && dtParsed && dtParsed < new Date(dStartVal + 'T00:00:00')) return false;
-        if (dEndVal && dtParsed && dtParsed > new Date(dEndVal + 'T23:59:59')) return false;
-
-        if (fDimensao !== 'ALL' && !cleanString(getVal(t, 'Dimensao do campo')).includes(cleanString(fDimensao))) return false;
-
-        if (hasContentFilter && !datesWithSelectedContent.has(dtKey)) return false;
-
-        return true;
-      });
-
-      let totalTreinos = filteredTreinos.length;
-      let somaNotas = 0, somaMinEfetiva = 0;
-
-      let dimStats = { inteiro: { count: 0, soma: 0 }, metade: { count: 0, soma: 0 } };
-
-      filteredTreinos.forEach(t => {
-        const notaGeral = parseNum(getVal(t, 'Desempenho geral da sessao'));
-        const minEfet = extractMinutagemEfetiva(t);
-        const dim = cleanString(getVal(t, 'Dimensao do campo'));
-
-        somaNotas += notaGeral;
-        somaMinEfetiva += minEfet;
-
-        if (dim.includes('inteiro')) {
-          dimStats.inteiro.count += 1;
-          dimStats.inteiro.soma += notaGeral;
-        } else if (dim.includes('metade')) {
-          dimStats.metade.count += 1;
-          dimStats.metade.soma += notaGeral;
-        }
-      });
-
-      document.getElementById('kpi-treino-qtd').innerText = totalTreinos;
-      document.getElementById('kpi-treino-nota-media').innerText = totalTreinos > 0 ? (somaNotas / totalTreinos).toFixed(1) : '0.0';
-      document.getElementById('kpi-treino-min-total').innerText = somaMinEfetiva + "'";
-      document.getElementById('kpi-treino-min-media').innerText = totalTreinos > 0 ? Math.round(somaMinEfetiva / totalTreinos) + "'" : "0'";
-
-      const mediaInteiro = dimStats.inteiro.count > 0 ? (dimStats.inteiro.soma / dimStats.inteiro.count).toFixed(1) : '0.0';
-      const mediaMetade = dimStats.metade.count > 0 ? (dimStats.metade.soma / dimStats.metade.count).toFixed(1) : '0.0';
-
-      const barInt = document.getElementById('bar-dim-inteiro');
-      const barMet = document.getElementById('bar-dim-metade');
-
-      barInt.style.height = Math.round((parseFloat(mediaInteiro) / 10) * 100) + '%';
-      barInt.innerText = mediaInteiro + ' pts';
-
-      barMet.style.height = Math.round((parseFloat(mediaMetade) / 10) * 100) + '%';
-      barMet.innerText = mediaMetade + ' pts';
-
-      let sortedTopicos = Object.keys(topicosStats).map(top => {
-        const count = topicosStats[top].count;
-        const media = topicosStats[top].somaPesos > 0 ? parseFloat((topicosStats[top].somaWeightedNota / topicosStats[top].somaPesos).toFixed(1)) : 0;
-        return { name: top, count: count, media: media };
-      });
-
-      if (sortTopicoMode === 'freq') {
-        sortedTopicos.sort((a,b) => b.count - a.count || b.media - a.media);
-      } else {
-        sortedTopicos.sort((a,b) => b.media - a.media || b.count - a.count);
-      }
-
-      let maxTopVal = sortedTopicos.length > 0 ? Math.max(...sortedTopicos.map(s => sortTopicoMode === 'freq' ? s.count : s.media), 1) : 1;
       const topChart = document.getElementById('chart-treino-topicos');
       topChart.innerHTML = '';
-
-      sortedTopicos.forEach(item => {
-        const pct = Math.round(((sortTopicoMode === 'freq' ? item.count : item.media) / maxTopVal) * 100);
-        topChart.innerHTML += `
-          <div class="bar-row">
-            <div class="bar-label" title="${item.name}">${item.name}</div>
-            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
-            <div class="bar-val">${item.count}x | ${item.media.toFixed(1)} pts</div>
-          </div>
-        `;
+      Object.keys(topicosStats).forEach(t => {
+        topChart.innerHTML += `<div class="bar-row"><div class="bar-label">${t}</div><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div><div class="bar-val">${topicosStats[t].count}x</div></div>`;
       });
 
-      let sortedConteudos = Object.keys(conteudosStats).map(c => {
-        const count = conteudosStats[c].count;
-        const media = conteudosStats[c].somaPesos > 0 ? parseFloat((conteudosStats[c].somaWeightedNota / conteudosStats[c].somaPesos).toFixed(1)) : 0;
-        return { name: c, count: count, media: media };
-      });
-
-      if (sortConteudoMode === 'freq') {
-        sortedConteudos.sort((a,b) => b.count - a.count || b.media - a.media);
-      } else {
-        sortedConteudos.sort((a,b) => b.media - a.media || b.count - a.count);
-      }
-
-      let maxContVal = sortedConteudos.length > 0 ? Math.max(...sortedConteudos.map(s => sortConteudoMode === 'freq' ? s.count : s.media), 1) : 1;
       const contChart = document.getElementById('chart-treino-conteudos');
       contChart.innerHTML = '';
-
-      sortedConteudos.forEach(item => {
-        const pct = Math.round(((sortConteudoMode === 'freq' ? item.count : item.media) / maxContVal) * 100);
-        contChart.innerHTML += `
-          <div class="bar-row">
-            <div class="bar-label" title="${item.name}">${item.name}</div>
-            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
-            <div class="bar-val">${item.count}x | ${item.media.toFixed(1)} pts</div>
-          </div>
-        `;
-      });
-
-      const filteredDatesSet = new Set(filteredTreinos.map(t => formatDateKey(getVal(t, 'Data'))));
-      const tbodyAtleta = document.querySelector('#table-treino-atletas tbody');
-      tbodyAtleta.innerHTML = '';
-
-      let playerStats = {};
-
-      (DB.posTreinoIndividual || []).forEach(row => {
-        const nome = getVal(row, 'Nome');
-        if (!nome) return;
-
-        Object.keys(row).forEach(dateCol => {
-          if (dateCol.includes('/')) {
-            const dtKey = formatDateKey(dateCol);
-            
-            if (filteredDatesSet.has(dtKey)) {
-              const notaVal = parseNum(row[dateCol]);
-              if (notaVal > 0) {
-                if (!playerStats[nome]) playerStats[nome] = { count: 0, sum: 0 };
-                playerStats[nome].count += 1;
-                playerStats[nome].sum += notaVal;
-              }
-            }
-          }
-        });
-      });
-
-      Object.keys(playerStats).sort((a,b) => playerStats[b].count - playerStats[a].count).forEach(p => {
-        const avg = (playerStats[p].sum / playerStats[p].count).toFixed(1);
-        tbodyAtleta.innerHTML += `<tr><td><b>${p}</b></td><td>${playerStats[p].count} sessões</td><td><b>${avg} pts</b></td></tr>`;
+      Object.keys(conteudosStats).forEach(c => {
+        contChart.innerHTML += `<div class="bar-row"><div class="bar-label">${c}</div><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div><div class="bar-val">${conteudosStats[c].count}x</div></div>`;
       });
     }
 
@@ -1151,19 +1070,6 @@
         document.getElementById('card-nasc').innerText = "-";
         document.getElementById('card-foto').style.display = 'none';
         document.getElementById('card-silhueta').style.display = 'block';
-
-        document.getElementById('card-kpi-jogos').innerText = '0';
-        document.getElementById('card-kpi-min-jogo').innerText = "0'";
-        document.getElementById('card-kpi-gols').innerText = '0';
-        document.getElementById('card-kpi-ass').innerText = '0';
-        document.getElementById('card-kpi-treinos').innerText = '0';
-        document.getElementById('card-kpi-min-treino').innerText = "0'";
-        document.getElementById('card-kpi-nota-treino').innerText = '0.0';
-
-        document.getElementById('card-chart-topicos').innerHTML = '';
-        document.getElementById('card-chart-conteudos').innerHTML = '';
-        document.querySelector('#card-table-treinos tbody').innerHTML = '';
-        document.querySelector('#card-table-jogos tbody').innerHTML = '';
         return;
       }
 
@@ -1172,15 +1078,10 @@
 
       if (ath) {
         document.getElementById('card-posicao').innerText = getVal(ath, 'Posição') || getVal(ath, 'Posicao') || '-';
-
         let pernaFound = '-';
         for (let k of Object.keys(ath)) {
-          const kClean = cleanString(k);
-          if (kClean.includes('perna') || kClean.includes('dominan') || kClean.includes('preferid')) {
-            if (ath[k] && ath[k].toString().trim() !== '') {
-              pernaFound = ath[k].toString().trim();
-              break;
-            }
+          if (cleanString(k).includes('perna') || cleanString(k).includes('dominan')) {
+            if (ath[k]) { pernaFound = ath[k].toString().trim(); break; }
           }
         }
         document.getElementById('card-perna').innerText = pernaFound;
@@ -1197,42 +1098,25 @@
         }
       }
 
-      // 1. Jogos com Filtros Aplicados
+      // Histórico de Jogos do Atleta
       let jogosAtleta = (DB.posJogoIndividual || []).filter(r => cleanString(getVal(r, 'Nome')) === targetClean);
       let totalJogos = 0, totalMinJogo = 0, totalGols = 0, totalAss = 0;
+      let athleteGameLabels = [], athleteGameData = [];
       let tbodyJogos = document.querySelector('#card-table-jogos tbody');
       tbodyJogos.innerHTML = '';
 
-      let posJogoMap = {};
-      (DB.posJogo || []).forEach(j => {
-        const key = getVal(j, 'No Jogo') || getVal(j, 'Data');
-        posJogoMap[key] = j;
-      });
-
       jogosAtleta.forEach(r => {
-        const matchKey = getVal(r, 'No Jogo') || getVal(r, 'Data');
-        const parentGame = posJogoMap[matchKey] || {};
+        const min = parseNum(getVal(r, 'Minutagem'));
+        if (min > 0) {
+          totalJogos++;
+          totalMinJogo += min;
+          totalGols += parseNum(getVal(r, 'Gols feitos'));
+          totalAss += parseNum(getVal(r, 'Assistencias'));
 
-        if (matchGameFilters(parentGame, r)) {
-          const min = parseNum(getVal(r, 'Minutagem'));
-          if (min > 0 || getVal(r, 'Titularidade')) {
-            totalJogos++;
-            totalMinJogo += min;
-            const g = parseNum(getVal(r, 'Gols feitos'));
-            const a = parseNum(getVal(r, 'Assistencias'));
-            totalGols += g;
-            totalAss += a;
+          athleteGameLabels.push(getVal(r, 'Data'));
+          athleteGameData.push(parseNum(getVal(r, 'Nota') || min));
 
-            tbodyJogos.innerHTML += `<tr>
-              <td>${getVal(r, 'Data')}</td>
-              <td><b>${getVal(parentGame, 'Adversario') || getVal(r, 'Adversario') || getVal(r, 'No Jogo')}</b></td>
-              <td>${getVal(r, 'Titularidade')}</td>
-              <td>${min}'</td>
-              <td><b>${g}</b></td>
-              <td>${parseNum(getVal(r, 'Cartao amarelo'))}</td>
-              <td>${parseNum(getVal(r, 'Cartao vermelho'))}</td>
-            </tr>`;
-          }
+          tbodyJogos.innerHTML += `<tr><td>${getVal(r, 'Data')}</td><td><b>${getVal(r, 'Adversario') || getVal(r, 'No Jogo')}</b></td><td>${getVal(r, 'Titularidade')}</td><td>${min}'</td><td><b>${parseNum(getVal(r, 'Gols feitos'))}</b></td><td>0</td><td>0</td></tr>`;
         }
       });
 
@@ -1241,27 +1125,13 @@
       document.getElementById('card-kpi-gols').innerText = totalGols;
       document.getElementById('card-kpi-ass').innerText = totalAss;
 
-      // 2. Treinos com Filtros Aplicados
-      const dStartVal = document.getElementById('filter-date-start').value;
-      const dEndVal = document.getElementById('filter-date-end').value;
-      const fDimensao = document.getElementById('filter-dimensao').value;
-      const fTopico = document.getElementById('filter-topico').value;
-      const fConteudo = document.getElementById('filter-conteudo').value;
+      renderLineChart('chart-atleta-jogos', athleteGameLabels, athleteGameData, 'Desempenho nos Jogos');
 
+      // Histórico de Treinos do Atleta
       let treinosCount = 0, totalMinTreino = 0, somaNotasTreino = 0;
-      let dateRatings = {};
+      let athleteTreinoLabels = [], athleteTreinoData = [];
       let tbodyTreinos = document.querySelector('#card-table-treinos tbody');
       tbodyTreinos.innerHTML = '';
-
-      let dateSessionMap = {};
-      (DB.posTreino || []).forEach(t => {
-        const dtKey = formatDateKey(getVal(t, 'Data'));
-        dateSessionMap[dtKey] = {
-          minEfetiva: extractMinutagemEfetiva(t),
-          dimensao: getVal(t, 'Dimensao do campo'),
-          dtParsed: parseDateString(getVal(t, 'Data'))
-        };
-      });
 
       (DB.posTreinoIndividual || []).forEach(row => {
         if (cleanString(getVal(row, 'Nome')) === targetClean) {
@@ -1269,24 +1139,14 @@
             if (dateCol.includes('/')) {
               const nota = parseNum(row[dateCol]);
               if (nota > 0) {
-                const dtKey = formatDateKey(dateCol);
-                const sInfo = dateSessionMap[dtKey] || { minEfetiva: 0, dimensao: '', dtParsed: null };
-
-                if (dStartVal && sInfo.dtParsed && sInfo.dtParsed < new Date(dStartVal + 'T00:00:00')) return;
-                if (dEndVal && sInfo.dtParsed && sInfo.dtParsed > new Date(dEndVal + 'T23:59:59')) return;
-                if (fDimensao !== 'ALL' && !cleanString(sInfo.dimensao).includes(cleanString(fDimensao))) return;
-
                 treinosCount++;
                 somaNotasTreino += nota;
-                dateRatings[dtKey] = nota;
+                totalMinTreino += 60;
 
-                totalMinTreino += sInfo.minEfetiva;
+                athleteTreinoLabels.push(dateCol);
+                athleteTreinoData.push(nota);
 
-                tbodyTreinos.innerHTML += `<tr>
-                  <td>${dateCol}</td>
-                  <td>${sInfo.minEfetiva}'</td>
-                  <td><b>${nota.toFixed(1)} pts</b></td>
-                </tr>`;
+                tbodyTreinos.innerHTML += `<tr><td>${dateCol}</td><td>60'</td><td><b>${nota.toFixed(1)} pts</b></td></tr>`;
               }
             }
           });
@@ -1297,69 +1157,7 @@
       document.getElementById('card-kpi-min-treino').innerText = totalMinTreino + "'";
       document.getElementById('card-kpi-nota-treino').innerText = treinosCount > 0 ? (somaNotasTreino / treinosCount).toFixed(1) : '0.0';
 
-      // 3. Tópicos e Conteúdos do Atleta
-      let topicosStats = {};
-      let conteudosStats = {};
-
-      (DB.posTreinoConteudo || []).forEach(row => {
-        const topico = getVal(row, 'TOPICOS') || getVal(row, 'TOPICO');
-        const conteudo = getVal(row, 'Conteudos') || getVal(row, 'Conteudo');
-
-        if (!topico || !conteudo) return;
-
-        if (fTopico !== 'ALL' && cleanString(topico) !== cleanString(fTopico)) return;
-        if (fConteudo !== 'ALL' && cleanString(conteudo) !== cleanString(fConteudo)) return;
-
-        Object.keys(row).forEach(dateCol => {
-          if (dateCol.includes('/')) {
-            const val = parseNum(row[dateCol]);
-            if (val === 1) {
-              const dtKey = formatDateKey(dateCol);
-              if (dateRatings[dtKey] !== undefined) {
-                if (!topicosStats[topico]) topicosStats[topico] = { sum: 0, count: 0 };
-                topicosStats[topico].sum += dateRatings[dtKey];
-                topicosStats[topico].count += 1;
-
-                if (!conteudosStats[conteudo]) conteudosStats[conteudo] = { sum: 0, count: 0 };
-                conteudosStats[conteudo].sum += dateRatings[dtKey];
-                conteudosStats[conteudo].count += 1;
-              }
-            }
-          }
-        });
-      });
-
-      const cardChartTop = document.getElementById('card-chart-topicos');
-      cardChartTop.innerHTML = '';
-
-      Object.keys(topicosStats).forEach(top => {
-        const media = (topicosStats[top].sum / topicosStats[top].count).toFixed(1);
-        const pct = Math.round((parseFloat(media) / 10) * 100);
-
-        cardChartTop.innerHTML += `
-          <div class="bar-row">
-            <div class="bar-label" title="${top}">${top}</div>
-            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
-            <div class="bar-val">${media} pts (${topicosStats[top].count}x)</div>
-          </div>
-        `;
-      });
-
-      const cardChartCont = document.getElementById('card-chart-conteudos');
-      cardChartCont.innerHTML = '';
-
-      Object.keys(conteudosStats).forEach(c => {
-        const media = (conteudosStats[c].sum / conteudosStats[c].count).toFixed(1);
-        const pct = Math.round((parseFloat(media) / 10) * 100);
-
-        cardChartCont.innerHTML += `
-          <div class="bar-row">
-            <div class="bar-label" title="${c}">${c}</div>
-            <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
-            <div class="bar-val">${media} pts (${conteudosStats[c].count}x)</div>
-          </div>
-        `;
-      });
+      renderLineChart('chart-atleta-treinos', athleteTreinoLabels.slice(-10), athleteTreinoData.slice(-10), 'Evolução nas Sessões de Treino');
     }
 
     window.onload = initDashboard;
