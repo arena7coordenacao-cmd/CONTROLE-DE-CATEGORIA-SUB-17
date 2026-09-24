@@ -459,7 +459,7 @@
       posTreino: "https://docs.google.com/spreadsheets/d/1kzbm-dZ8mPy0gNg20dBluRlMI1l5_aO3-C3CzYxJSeI/export?format=csv&gid=1809833387",
       posTreinoConteudo: "https://docs.google.com/spreadsheets/d/1kzbm-dZ8mPy0gNg20dBluRlMI1l5_aO3-C3CzYxJSeI/export?format=csv&gid=232605076",
       posTreinoIndividual: "https://docs.google.com/spreadsheets/d/1kzbm-dZ8mPy0gNg20dBluRlMI1l5_aO3-C3CzYxJSeI/export?format=csv&gid=1167144776",
-      baseComissao: "https://docs.google.com/spreadsheets/d/1kzbm-dZ8mPy0gNg20dBluRlMI1l5_aO3-C3CzYxJSeI/export?format=csv&gid=1116643640"
+      baseComissao: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=81740306&single=true&output=csv"
     };
 
     let DB = {};
@@ -500,6 +500,18 @@
         }
       }
       return parseNum(getVal(row, 'Minutagem efetiva')) || parseNum(getVal(row, 'Minutagem preparatoria'));
+    }
+
+    function formatImageUrl(url) {
+      if (!url || typeof url !== 'string') return '';
+      let cleanUrl = url.trim();
+      if (cleanUrl.includes('drive.google.com')) {
+        const match = cleanUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || cleanUrl.match(/id=([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          return `https://lh3.googleusercontent.com/d/${match[1]}`;
+        }
+      }
+      return cleanUrl;
     }
 
     function toTitleCase(str) {
@@ -588,8 +600,8 @@
         Object.keys(row).forEach(k => {
           const val = row[k] ? row[k].toString().trim() : '';
           if (val.startsWith('http')) {
-            if (rowStr.includes('logo') || rowStr.includes('arena')) logoArenaUrl = val;
-            if (rowStr.includes('treinador') || rowStr.includes('tecnico') || rowStr.includes('foto')) fotoTreinadorUrl = val;
+            if (rowStr.includes('logo') || rowStr.includes('arena')) logoArenaUrl = formatImageUrl(val);
+            if (rowStr.includes('treinador') || rowStr.includes('tecnico') || rowStr.includes('foto')) fotoTreinadorUrl = formatImageUrl(val);
           } else if ((rowStr.includes('treinador') || rowStr.includes('nome')) && val.length > 2 && !val.startsWith('http')) {
             nomeTreinador = val;
           }
@@ -837,7 +849,6 @@
 
       posJogo.sort((a,b) => (parseDateString(getVal(a, 'Data')) || 0) - (parseDateString(getVal(b, 'Data')) || 0));
 
-      // Lógica do Total de Jogos: Máximo valor da coluna 'No Jogo' se sem filtro de adversário, senão o length
       let maxNumJogo = 0;
       (DB.posJogo || []).forEach(j => {
         let n = parseNum(getVal(j, 'No Jogo') || getVal(j, 'Jogo'));
@@ -1159,7 +1170,7 @@
         document.getElementById('card-caracteristicas').innerText = getVal(ath, 'Caracteristicas') || getVal(ath, 'Pontos Fortes') || getVal(ath, 'Perfil') || "Nenhuma característica cadastrada.";
         document.getElementById('card-pontos-melhorar').innerText = getVal(ath, 'Pontos a melhorar') || getVal(ath, 'Pontos Fracos') || getVal(ath, 'Desenvolvimento') || "Nenhum ponto a melhorar cadastrado.";
 
-        const fotoUrl = getVal(ath, 'Link foto');
+        const fotoUrl = formatImageUrl(getVal(ath, 'Link foto') || getVal(ath, 'Foto'));
         if (fotoUrl && fotoUrl.startsWith('http')) {
           document.getElementById('card-foto').src = fotoUrl;
           document.getElementById('card-foto').style.display = 'block';
@@ -1191,7 +1202,6 @@
         }
       });
 
-      // Cálculo de Minutos por Participação em Gol
       const totalParticipacoes = totalGols + totalAss;
       const minPorPartGol = totalParticipacoes > 0 ? Math.round(totalMinJogo / totalParticipacoes) : 0;
 
