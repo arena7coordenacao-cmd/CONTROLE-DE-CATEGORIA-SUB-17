@@ -379,11 +379,24 @@
         </div>
       </div>
 
+      <!-- Quadro de Perfil Qualitativo (Topo) -->
+      <div class="grid-2col">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header-bar">⭐ Características Principais</div>
+          <div class="obs-box" id="card-caracteristicas">Selecione um atleta para visualizar suas características.</div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-header-bar">🎯 Pontos a Melhorar / Desenvolvimento</div>
+          <div class="obs-box" id="card-pontos-melhorar" style="border-left-color:#b91c1c;">Selecione um atleta para visualizar os pontos de desenvolvimento.</div>
+        </div>
+      </div>
+
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-lbl">Jogos</div><div class="kpi-val" id="card-kpi-jogos">0</div></div>
         <div class="kpi-card"><div class="kpi-lbl">Mins em Jogo</div><div class="kpi-val" id="card-kpi-min-jogo">0'</div></div>
         <div class="kpi-card"><div class="kpi-lbl">Gols</div><div class="kpi-val" id="card-kpi-gols">0</div></div>
         <div class="kpi-card"><div class="kpi-lbl">Assistências</div><div class="kpi-val" id="card-kpi-ass">0</div></div>
+        <div class="kpi-card"><div class="kpi-lbl">Mins / Part. Gol</div><div class="kpi-val" id="card-kpi-min-part-gol">0'</div></div>
         <div class="kpi-card"><div class="kpi-lbl">Presenças Treino</div><div class="kpi-val" id="card-kpi-treinos">0</div></div>
         <div class="kpi-card"><div class="kpi-lbl">Mins Efet. Treino</div><div class="kpi-val" id="card-kpi-min-treino">0'</div></div>
         <div class="kpi-card"><div class="kpi-lbl">Nota Média Treino</div><div class="kpi-val" id="card-kpi-nota-treino">0.0</div></div>
@@ -562,7 +575,6 @@
       }
     }
 
-    // Leitura Flexível na aba baseComissao e Glossario
     function loadGlossarioMedia() {
       const sources = [...(DB.baseComissao || []), ...(DB.glossario || [])];
       if (sources.length === 0) return;
@@ -573,13 +585,12 @@
 
       sources.forEach(row => {
         const rowStr = JSON.stringify(row).toLowerCase();
-        
         Object.keys(row).forEach(k => {
           const val = row[k] ? row[k].toString().trim() : '';
           if (val.startsWith('http')) {
             if (rowStr.includes('logo') || rowStr.includes('arena')) logoArenaUrl = val;
-            if (rowStr.includes('treinador') || rowStr.includes('tecnico')) fotoTreinadorUrl = val;
-          } else if (rowStr.includes('treinador') && val.length > 2 && !val.startsWith('http')) {
+            if (rowStr.includes('treinador') || rowStr.includes('tecnico') || rowStr.includes('foto')) fotoTreinadorUrl = val;
+          } else if ((rowStr.includes('treinador') || rowStr.includes('nome')) && val.length > 2 && !val.startsWith('http')) {
             nomeTreinador = val;
           }
         });
@@ -826,7 +837,18 @@
 
       posJogo.sort((a,b) => (parseDateString(getVal(a, 'Data')) || 0) - (parseDateString(getVal(b, 'Data')) || 0));
 
-      let totalJogos = posJogo.length;
+      // Lógica do Total de Jogos: Máximo valor da coluna 'No Jogo' se sem filtro de adversário, senão o length
+      let maxNumJogo = 0;
+      (DB.posJogo || []).forEach(j => {
+        let n = parseNum(getVal(j, 'No Jogo') || getVal(j, 'Jogo'));
+        if (n > maxNumJogo) maxNumJogo = n;
+      });
+
+      let totalJogosDisplay = posJogo.length;
+      if (document.getElementById('filter-adv').value === 'ALL' && document.getElementById('filter-comp').value === 'ALL' && posJogo.length === DB.posJogo.length && maxNumJogo > 0) {
+        totalJogosDisplay = maxNumJogo;
+      }
+
       let vit = 0, der = 0, totalMin = 0, totalGolsPro = 0, totalGolsContra = 0;
       let gameDates = [];
 
@@ -843,9 +865,7 @@
         if (dParsed) gameDates.push(dParsed);
       });
 
-      // Correção Definitiva do Cálculo de Dias entre Jogos
       let distMax = 0, distMin = 0, distSoma = 0, diffCount = 0;
-      
       if (gameDates.length >= 2) {
         let tempMin = Infinity;
         for (let i = 1; i < gameDates.length; i++) {
@@ -860,9 +880,9 @@
         distMin = tempMin === Infinity ? 0 : tempMin;
       }
 
-      const pctVit = totalJogos > 0 ? Math.round((vit / totalJogos) * 100) : 0;
+      const pctVit = posJogo.length > 0 ? Math.round((vit / posJogo.length) * 100) : 0;
 
-      document.getElementById('kpi-jogos').innerText = totalJogos;
+      document.getElementById('kpi-jogos').innerText = totalJogosDisplay;
       document.getElementById('kpi-pct-vitorias').innerText = pctVit + '%';
       document.getElementById('kpi-minutagem').innerText = totalMin + "'";
       document.getElementById('kpi-gols-pro').innerText = totalGolsPro;
@@ -1115,6 +1135,8 @@
         document.getElementById('card-posicao').innerText = "-";
         document.getElementById('card-perna').innerText = "-";
         document.getElementById('card-nasc').innerText = "-";
+        document.getElementById('card-caracteristicas').innerText = "Selecione um atleta para visualizar suas características.";
+        document.getElementById('card-pontos-melhorar').innerText = "Selecione um atleta para visualizar os pontos de desenvolvimento.";
         document.getElementById('card-foto').style.display = 'none';
         document.getElementById('card-silhueta').style.display = 'block';
         return;
@@ -1133,6 +1155,9 @@
         }
         document.getElementById('card-perna').innerText = pernaFound;
         document.getElementById('card-nasc').innerText = getVal(ath, 'Data Nasc') || getVal(ath, 'Nascimento') || '-';
+
+        document.getElementById('card-caracteristicas').innerText = getVal(ath, 'Caracteristicas') || getVal(ath, 'Pontos Fortes') || getVal(ath, 'Perfil') || "Nenhuma característica cadastrada.";
+        document.getElementById('card-pontos-melhorar').innerText = getVal(ath, 'Pontos a melhorar') || getVal(ath, 'Pontos Fracos') || getVal(ath, 'Desenvolvimento') || "Nenhum ponto a melhorar cadastrado.";
 
         const fotoUrl = getVal(ath, 'Link foto');
         if (fotoUrl && fotoUrl.startsWith('http')) {
@@ -1166,10 +1191,15 @@
         }
       });
 
+      // Cálculo de Minutos por Participação em Gol
+      const totalParticipacoes = totalGols + totalAss;
+      const minPorPartGol = totalParticipacoes > 0 ? Math.round(totalMinJogo / totalParticipacoes) : 0;
+
       document.getElementById('card-kpi-jogos').innerText = totalJogos;
       document.getElementById('card-kpi-min-jogo').innerText = totalMinJogo + "'";
       document.getElementById('card-kpi-gols').innerText = totalGols;
       document.getElementById('card-kpi-ass').innerText = totalAss;
+      document.getElementById('card-kpi-min-part-gol').innerText = minPorPartGol > 0 ? minPorPartGol + "'" : "N/A";
 
       renderLineChart('chart-atleta-jogos', athleteGameLabels, athleteGameData, 'Desempenho nos Jogos');
 
