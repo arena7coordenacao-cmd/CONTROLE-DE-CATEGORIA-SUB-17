@@ -225,7 +225,7 @@
             <img id="jogos-logo-arena" src="" style="display:none;" />
             <svg id="jogos-silhueta-arena" width="50" height="50" viewBox="0 0 24 24" fill="#94a3b8"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           </div>
-          <span style="font-size:0.75rem; font-weight:800; text-align:center; margin-top:6px; color:var(--green-header)">ARENA | SUB-17</span>
+          <span style="font-size:0.75rem; font-weight:800; text-align:center; margin-top:6px; color:var(--green-header)">ARENA 7 | SUB-17</span>
         </div>
 
         <div style="flex:1;">
@@ -596,14 +596,21 @@
       let nomeTreinador = '';
 
       sources.forEach(row => {
-        const rowStr = JSON.stringify(row).toLowerCase();
         Object.keys(row).forEach(k => {
           const val = row[k] ? row[k].toString().trim() : '';
+          const keyClean = cleanString(k);
+
           if (val.startsWith('http')) {
-            if (rowStr.includes('logo') || rowStr.includes('arena')) logoArenaUrl = formatImageUrl(val);
-            if (rowStr.includes('treinador') || rowStr.includes('tecnico') || rowStr.includes('foto')) fotoTreinadorUrl = formatImageUrl(val);
-          } else if ((rowStr.includes('treinador') || rowStr.includes('nome')) && val.length > 2 && !val.startsWith('http')) {
-            nomeTreinador = val;
+            if (keyClean.includes('logo') || keyClean.includes('arena') || keyClean.includes('escudo')) {
+              logoArenaUrl = formatImageUrl(val);
+            }
+            if (keyClean.includes('treinador') || keyClean.includes('tecnico') || keyClean.includes('foto_treinador')) {
+              fotoTreinadorUrl = formatImageUrl(val);
+            }
+          } else if (keyClean.includes('treinador') || keyClean.includes('tecnico') || keyClean.includes('nome_treinador')) {
+            if (val.length > 2 && !val.startsWith('http')) {
+              nomeTreinador = val;
+            }
           }
         });
       });
