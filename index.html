@@ -141,7 +141,7 @@
     </header>
 
     <div class="filter-bar">
-      <!-- Filtro Atleta (Exclusivo Atleta) -->
+      <!-- Filtro Atleta -->
       <div class="filter-group filter-atleta-only" style="display:none;">
         <label>Atleta Selecionado</label>
         <select id="filter-player" onchange="applyFilters()"><option value="ALL">Todos os Atletas</option></select>
@@ -249,7 +249,7 @@
         </div>
 
         <div class="card">
-          <div class="card-header-bar">Análise Qualitativa do Conflito / Partida</div>
+          <div class="card-header-bar">Análise Qualitativa da Partida</div>
           <div style="margin-bottom:10px;">
             <label style="font-size:0.68rem; font-weight:800; color:var(--green-header)">Selecione o Jogo Especifico:</label>
             <select id="select-jogo-obs" onchange="renderJogoObservacoes()" style="width:100%; padding:6px; margin-top:4px; font-size:0.78rem; border-radius:4px; border:1px solid var(--border-color);"></select>
@@ -445,7 +445,8 @@
       glossario: "https://docs.google.com/spreadsheets/d/1kzbm-dZ8mPy0gNg20dBluRlMI1l5_aO3-C3CzYxJSeI/export?format=csv&gid=0",
       posTreino: "https://docs.google.com/spreadsheets/d/1kzbm-dZ8mPy0gNg20dBluRlMI1l5_aO3-C3CzYxJSeI/export?format=csv&gid=1809833387",
       posTreinoConteudo: "https://docs.google.com/spreadsheets/d/1kzbm-dZ8mPy0gNg20dBluRlMI1l5_aO3-C3CzYxJSeI/export?format=csv&gid=232605076",
-      posTreinoIndividual: "https://docs.google.com/spreadsheets/d/1kzbm-dZ8mPy0gNg20dBluRlMI1l5_aO3-C3CzYxJSeI/export?format=csv&gid=1167144776"
+      posTreinoIndividual: "https://docs.google.com/spreadsheets/d/1kzbm-dZ8mPy0gNg20dBluRlMI1l5_aO3-C3CzYxJSeI/export?format=csv&gid=1167144776",
+      baseComissao: "https://docs.google.com/spreadsheets/d/1kzbm-dZ8mPy0gNg20dBluRlMI1l5_aO3-C3CzYxJSeI/export?format=csv&gid=1116643640"
     };
 
     let DB = {};
@@ -537,7 +538,8 @@
           fetchCSV(URLS.glossario),
           fetchCSV(URLS.posTreino),
           fetchCSV(URLS.posTreinoConteudo),
-          fetchCSV(URLS.posTreinoIndividual)
+          fetchCSV(URLS.posTreinoIndividual),
+          fetchCSV(URLS.baseComissao)
         ]);
 
         DB.posJogo = results[0].value || [];
@@ -547,6 +549,7 @@
         DB.posTreino = results[4].value || [];
         DB.posTreinoConteudo = results[5].value || [];
         DB.posTreinoIndividual = results[6].value || [];
+        DB.baseComissao = results[7].value || [];
 
         loadGlossarioMedia();
         populateFilters();
@@ -559,15 +562,16 @@
       }
     }
 
-    // Busca insensível a estrutura no Glossário
+    // Leitura Flexível na aba baseComissao e Glossario
     function loadGlossarioMedia() {
-      if (!DB.glossario || DB.glossario.length === 0) return;
+      const sources = [...(DB.baseComissao || []), ...(DB.glossario || [])];
+      if (sources.length === 0) return;
 
       let logoArenaUrl = '';
       let fotoTreinadorUrl = '';
       let nomeTreinador = '';
 
-      DB.glossario.forEach(row => {
+      sources.forEach(row => {
         const rowStr = JSON.stringify(row).toLowerCase();
         
         Object.keys(row).forEach(k => {
@@ -575,7 +579,7 @@
           if (val.startsWith('http')) {
             if (rowStr.includes('logo') || rowStr.includes('arena')) logoArenaUrl = val;
             if (rowStr.includes('treinador') || rowStr.includes('tecnico')) fotoTreinadorUrl = val;
-          } else if (rowStr.includes('treinador') && val.length > 2) {
+          } else if (rowStr.includes('treinador') && val.length > 2 && !val.startsWith('http')) {
             nomeTreinador = val;
           }
         });
@@ -839,21 +843,21 @@
         if (dParsed) gameDates.push(dParsed);
       });
 
-      // Cálculo Seguro de Distância entre Jogos (evita o bug de 999)
+      // Correção Definitiva do Cálculo de Dias entre Jogos
       let distMax = 0, distMin = 0, distSoma = 0, diffCount = 0;
       
-      if (gameDates.length > 1) {
-        distMin = 999;
+      if (gameDates.length >= 2) {
+        let tempMin = Infinity;
         for (let i = 1; i < gameDates.length; i++) {
           let diffDays = Math.round((gameDates[i] - gameDates[i-1]) / (1000 * 60 * 60 * 24));
           if (diffDays >= 0) {
             if (diffDays > distMax) distMax = diffDays;
-            if (diffDays < distMin) distMin = diffDays;
+            if (diffDays < tempMin) tempMin = diffDays;
             distSoma += diffDays;
             diffCount++;
           }
         }
-        if (distMin === 999) distMin = 0;
+        distMin = tempMin === Infinity ? 0 : tempMin;
       }
 
       const pctVit = totalJogos > 0 ? Math.round((vit / totalJogos) * 100) : 0;
@@ -939,8 +943,6 @@
     function renderAbaTreinos() {
       const dStartVal = document.getElementById('filter-date-start').value;
       const dEndVal = document.getElementById('filter-date-end').value;
-      const fTopico = document.getElementById('filter-topico').value;
-      const fConteudo = document.getElementById('filter-conteudo').value;
       const fDimensao = document.getElementById('filter-dimensao').value;
 
       let posTreino = DB.posTreino || [];
@@ -975,7 +977,6 @@
         }
       });
 
-      // Calcula Moda de Complexidade
       let compMaisUsada = 'N/A';
       let maxFreq = 0;
       Object.keys(complexidadeFreq).forEach(c => {
@@ -992,7 +993,6 @@
       document.getElementById('kpi-media-avaliados').innerText = totalTreinos > 0 ? Math.round(somaAvaliados / totalTreinos) : '0';
       document.getElementById('kpi-complexidade').innerText = compMaisUsada;
 
-      // Evolução de Notas por Conteúdo (Considera Preparatória, Conceitual e Conexão)
       let recent10 = filteredTreinos.slice(-10);
       let tLabels = recent10.map(t => {
         let prep = getVal(t, 'Conteudo Preparatoria') || getVal(t, 'Conteudo');
@@ -1004,7 +1004,6 @@
       let tData = recent10.map(t => parseNum(getVal(t, 'Desempenho geral da sessao')));
       renderLineChart('chart-evolucao-treinos', tLabels, tData, 'Nota da Sessão');
 
-      // Gráfico de Desempenho por Complexidade
       let compLabels = Object.keys(complexidadeNotas);
       let compData = compLabels.map(c => (complexidadeNotas[c].sum / complexidadeNotas[c].count).toFixed(1));
 
@@ -1023,7 +1022,6 @@
         options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 10 } } }
       });
 
-      // Relação Numérica x Nota
       let relNumericaCount = {};
       filteredTreinos.forEach(t => {
         let rel = getVal(t, 'Relacao numerica') || getVal(t, 'Conexao com o jogo') || 'Igualdade';
