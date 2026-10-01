@@ -68,7 +68,7 @@ th{background:#f8fafc;color:var(--gh);font-weight:700;position:sticky;top:0}
 <div id="loader"><div class="spin"></div><span id="lmsg">Carregando dados e mídias...</span></div>
 
 <aside>
-  <div class="brand"><img id="sidebar-logo" style="display:none"><div class="brand-t">⚽ SUB-17<br>PERFORMANCE</div></div>
+  <div class="brand"><img id="sidebar-logo" class="m-logo" style="display:none"><div class="brand-t">⚽ SUB-17<br>PERFORMANCE</div></div>
   <div class="nav active" data-v="aba-jogos" data-t="JOGOS">📊 Jogos</div>
   <div class="nav" data-v="aba-treino" data-t="TREINOS">📋 Treinos</div>
   <div class="nav" data-v="aba-atleta" data-t="CARTÃO DO ATLETA">👤 Cartão do Atleta</div>
@@ -96,7 +96,8 @@ th{background:#f8fafc;color:var(--gh);font-weight:700;position:sticky;top:0}
 <!-- JOGOS -->
 <div id="aba-jogos" class="view active">
   <div class="top">
-    <div class="card side"><div class="av"><img id="jl" style="display:none"><span id="jl-x" style="font-size:2rem">🛡️</span></div><span class="cap">ARENA 7 | SUB-17</span></div>
+    <div class="card side"><div class="av"><img class="m-logo" style="display:none"><span class="m-logo-x" style="font-size:2rem">🛡️</span></div><span class="cap">ARENA 7 | SUB-17</span></div>
+    <div class="card side"><div class="av"><img class="m-foto" style="display:none"><span class="m-foto-x" style="font-size:2rem">👤</span></div><span class="cap m-nome">TREINADOR PRINCIPAL</span></div>
     <div style="flex:1"><div class="kpis">
       <div class="kpi"><div class="kl">Nº de Jogos</div><div class="kv" id="k-jogos">0</div></div>
       <div class="kpi"><div class="kl">% Vitórias</div><div class="kv" id="k-vit">0%</div></div>
@@ -126,7 +127,8 @@ th{background:#f8fafc;color:var(--gh);font-weight:700;position:sticky;top:0}
 <!-- TREINOS -->
 <div id="aba-treino" class="view">
   <div class="top">
-    <div class="card side"><div class="av"><img id="tf" style="display:none"><span id="tf-x" style="font-size:2rem">👤</span></div><span class="cap" id="t-nome">TREINADOR PRINCIPAL</span></div>
+    <div class="card side"><div class="av"><img class="m-logo" style="display:none"><span class="m-logo-x" style="font-size:2rem">🛡️</span></div><span class="cap">ARENA 7 | SUB-17</span></div>
+    <div class="card side"><div class="av"><img class="m-foto" style="display:none"><span class="m-foto-x" style="font-size:2rem">👤</span></div><span class="cap m-nome">TREINADOR PRINCIPAL</span></div>
     <div style="flex:1"><div class="kpis">
       <div class="kpi"><div class="kl">Nº de Treinos</div><div class="kv" id="k-tq">0</div></div>
       <div class="kpi"><div class="kl">Nota Média Sessões</div><div class="kv" id="k-tn">0.0</div></div>
@@ -198,7 +200,8 @@ const SID="https://docs.google.com/spreadsheets/d/1kzbm-dZ8mPy0gNg20dBluRlMI1l5_
 const URLS={
   posJogo:SID+"2280537",posJogoIndividual:SID+"2031698179",baseJogadores:SID+"1169457664",glossario:SID+"0",
   posTreino:SID+"1809833387",posTreinoConteudo:SID+"232605076",posTreinoIndividual:SID+"1167144776",
-  baseComissao:"https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=81740306&single=true&output=csv"
+  baseComissao:"https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?gid=81740306&single=true&output=csv",
+  midia:"https://docs.google.com/spreadsheets/d/e/2PACX-1vSBNso9c34_VI3Dliww5_kQVHoKSxBA20Eck3JRUk63bRS504q-3XIrjWmaa3Db-bnDb8Npb0gr0IYn/pub?output=csv"
 };
 
 /* ---------- Utilitários ---------- */
@@ -236,11 +239,25 @@ function build(raw){
   DB.cont=R('posTreinoConteudo').map(o=>{const top=pk(o,'topicos','topico'),c=pk(o,'conteudos','conteudo');const dks=[];for(const k in o)if(k.includes('/')&&num(o[k])===1){const d=pdate(k).dk;if(d)dks.push(d)}return{top,c,dks}}).filter(r=>r.top&&r.c);
   DB.tind={};R('posTreinoIndividual').forEach(o=>{const k=norm(pk(o,'nome'));if(!k)return;const m=DB.tind[k]=DB.tind[k]||{};for(const c in o)if(c.includes('/')){const n=num(o[c]);if(n>0){const d=pdate(c).dk;if(d)m[d]=n}}});
   // mídias
-  let logo='',foto='',nome='';
-  [...R('baseComissao'),...R('glossario')].forEach(o=>{for(const k in o){const v=String(o[k]||'').trim();if(!v)continue;
-    if(v.startsWith('http')){if(/logo|arena|escudo/.test(k))logo=fmtImg(v);if(/treinador|tecnico/.test(k))foto=fmtImg(v)}
-    else if(/treinador|tecnico/.test(k)&&v.length>2)nome=v}});
-  DB.media={logo,foto,nome};
+  // mídias: funciona com colunas (cabeçalho "logo", "treinador"...) ou linhas ("Treinador | Nome | link")
+  let logo='',foto='',nome='',urls=[];
+  const isUrl=v=>/^https?:\/\//i.test(v);
+  const LBL=/^(treinador|tecnico|foto|cargo|nome|logo|arena|escudo|imagem|link|principal)/;
+  [...R('midia'),...R('baseComissao'),...R('glossario')].forEach(o=>{
+    const ents=Object.entries(o).map(([k,v])=>[k,String(v||'').trim()]).filter(e=>e[1]);
+    const ctxTxt=ents.filter(e=>!isUrl(e[1])).map(e=>norm(e[1])).join(' ');
+    ents.forEach(([k,v])=>{
+      if(isUrl(v)){
+        urls.push(v);const ctx=k+' '+ctxTxt;
+        if(/treinador|tecnico|comissao|coach/.test(ctx)){if(!foto)foto=v}
+        else if(/logo|arena|escudo|clube|brasao/.test(ctx)){if(!logo)logo=v}
+      }else if(/treinador|tecnico/.test(k)&&v.length>2&&!nome)nome=v;
+    });
+    if(!nome&&/treinador|tecnico/.test(ctxTxt)){const c=ents.find(e=>!isUrl(e[1])&&e[1].length>2&&!LBL.test(norm(e[1])));if(c)nome=c[1]}
+  });
+  if(!logo&&urls.length===1)logo=urls[0];
+  DB.media={logo:fmtImg(logo),foto:fmtImg(foto),nome};
+  console.log('Mídias detectadas:',DB.media);
 }
 
 /* ---------- Filtros ---------- */
@@ -418,11 +435,24 @@ function show(id,t){
   RENDER[id]();
 }
 const apply=debounce(()=>RENDER[cur](),80);
+function setImgs(sel,xsel,url){
+  if(!url)return;
+  const id=(url.match(/\/d\/([a-zA-Z0-9_-]+)/)||[])[1];
+  document.querySelectorAll(sel).forEach((img,i)=>{
+    let tried=0;
+    img.onerror=()=>{ // 2ª tentativa via thumbnail do Drive; se falhar, volta ao ícone
+      if(id&&!tried++){img.src=`https://drive.google.com/thumbnail?id=${id}&sz=w400`;return}
+      img.style.display='none';const x=img.parentNode.querySelector(xsel);if(x)x.style.display='';
+    };
+    img.onload=()=>{img.style.display='block';const x=img.parentNode.querySelector(xsel);if(x)x.style.display='none'};
+    img.src=url;
+  });
+}
 function applyMedia(){
   const m=DB.media;
-  if(m.logo){['sidebar-logo','jl'].forEach(i=>{$(i).src=m.logo;$(i).style.display='block'});$('jl-x').style.display='none'}
-  if(m.foto){$('tf').src=m.foto;$('tf').style.display='block';$('tf-x').style.display='none'}
-  if(m.nome)$('t-nome').textContent=title(m.nome);
+  setImgs('.m-logo','.m-logo-x',m.logo);   // logo: sidebar + Jogos + Treinos
+  setImgs('.m-foto','.m-foto-x',m.foto);   // treinador: somente Jogos + Treinos
+  if(m.nome)document.querySelectorAll('.m-nome').forEach(e=>e.textContent=title(m.nome));
 }
 
 /* ---------- Carga: cache local + atualização em segundo plano ---------- */
